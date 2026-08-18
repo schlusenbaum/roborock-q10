@@ -6,6 +6,7 @@ from homeassistant.components import websocket_api
 from homeassistant.components.vacuum import DATA_COMPONENT
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import discovery
 
 
 DOMAIN = "roborock_q10"
@@ -151,5 +152,16 @@ async def async_setup(hass: HomeAssistant, config) -> bool:
     hass.data[DOMAIN]["listeners"] = {}
 
     websocket_api.async_register_command(hass, websocket_get_rooms)
+
+    async def load_select(event):
+        await discovery.async_load_platform(
+            hass,
+            "select",
+            DOMAIN,
+            {"entity_id": "vacuum.roborock_q10_s5"},
+            config,
+        )
+
+    hass.bus.async_listen_once("homeassistant_started", load_select)
 
     return True
