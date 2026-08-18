@@ -40,6 +40,14 @@ class RoborockQ10WaterLevelSelect(SelectEntity):
         self._vacuum = vacuum
         self._attr_unique_id = f"{vacuum.entity_id}_water_level"
 
+    async def async_added_to_hass(self):
+        await super().async_added_to_hass()
+        self.async_on_remove(
+            self._vacuum.coordinator.api.status.add_update_listener(
+                self.async_write_ha_state
+            )
+        )
+
     @property
     def current_option(self):
         level = self._vacuum.coordinator.api.status.water_level
