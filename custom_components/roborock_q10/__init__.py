@@ -91,11 +91,19 @@ def _register_map_listener(hass, entity):
 
         last_fire = now
 
-        import logging
-        logging.getLogger("custom_components.roborock_q10").warning(
-            EVENT_MAP_UPDATED,
-            {"entity_id": entity_id},
-        )
+        rooms = entity.coordinator.api.map.rooms or []
+
+        hass.data.setdefault(DOMAIN, {}).setdefault("rooms", {})[
+            entity_id
+        ] = [
+            {
+                "id": room.id,
+                "name": room.name,
+                "pixel_value": room.pixel_value,
+                "pixel_count": room.pixel_count,
+            }
+            for room in rooms
+        ]
 
     listeners[entity_id] = entity.coordinator.api.map.add_update_listener(
         map_updated
@@ -153,15 +161,21 @@ async def async_setup(hass: HomeAssistant, config) -> bool:
 
     websocket_api.async_register_command(hass, websocket_get_rooms)
 
-    async def load_select(event):
+    return True
+
+
+async def async_setup_entry(hass, entry):
+    entity_id = entry.data.get("entity_id")
+    if entity_id:
         await discovery.async_load_platform(
             hass,
             "select",
             DOMAIN,
-            {"entity_id": "vacuum.roborock_q10_s5"},
-            config,
+            {"entity_id": entity_id},
+            {},
         )
+    return True
 
-    hass.bus.async_listen_once("homeassistant_started", load_select)
 
+async def async_unload_entry(hass, entry):
     return True
