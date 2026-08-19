@@ -1,0 +1,20 @@
+diagnose:
+  name: Diagnose
+  description: Führt eine Diagnose des Roborock Q10 aus.
+  fields:
+    entity_id:
+      name: Roboter
+      description: Die Q10 Vacuum-Entität.
+      required: true
+      selector:
+        entity:
+          domain: vacuum
+    mode:
+      name: Diagnosemodus
+      description: Der auszuführende Diagnosemodus.
+      required: false
+      default: map
+      selector:
+        select:
+          options:
+            - map

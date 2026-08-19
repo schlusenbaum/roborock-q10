@@ -7,6 +7,7 @@ from homeassistant.components.vacuum import DATA_COMPONENT
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import discovery
+from .diagnostics import diagnose
 
 
 DOMAIN = "roborock_q10"
@@ -91,6 +92,13 @@ def _register_map_listener(hass, entity):
 
         last_fire = now
 
+        image_content = entity.coordinator.api.map.image_content
+
+        if image_content is not None:
+            hass.data.setdefault(DOMAIN, {}).setdefault("maps", {})[
+                entity_id
+            ] = image_content
+
         rooms = entity.coordinator.api.map.rooms or []
 
         hass.data.setdefault(DOMAIN, {}).setdefault("rooms", {})[
@@ -109,6 +117,41 @@ def _register_map_listener(hass, entity):
         map_updated
     )
 
+WS_DIAGNOSTICS = "roborock_q10/diagnostics"
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_DIAGNOSTICS,
+        vol.Required("entity_id"): cv.entity_id,
+        vol.Optional("mode", default="map"): str,
+    }
+)
+@websocket_api.async_response
+async def websocket_diagnostics(hass, connection, msg):
+    component = hass.data[DATA_COMPONENT]
+    entity = component.get_entity(msg["entity_id"])
+
+    if entity is None:
+        connection.send_error(
+            msg["id"],
+            "entity_not_found",
+            "Vacuum entity not found",
+        )
+        return
+
+    if msg["mode"] != "map":
+        connection.send_error(
+            msg["id"],
+            "unknown_mode",
+            f"Unknown diagnostic mode: {msg['mode']}",
+        )
+        return
+
+    connection.send_result(
+        msg["id"],
+        diagnose_map(entity),
+    )
 
 @websocket_api.websocket_command(
     {
@@ -159,7 +202,33 @@ async def async_setup(hass: HomeAssistant, config) -> bool:
 
     hass.data[DOMAIN]["listeners"] = {}
 
+    async def handle_diagnose(call):
+        entity_id = call.data["entity_id"]
+        mode = call.data.get("mode", "map")
+        entity = hass.data[DATA_COMPONENT].get_entity(entity_id)
+
+        if entity is None:
+            raise ValueError(f"Entity not found: {entity_id}")
+
+        result = await diagnose(entity, mode, hass)
+
+        import logging
+        logging.getLogger("custom_components.roborock_q10").warning(
+            "Q10 DIAGNOSTICS [%s]: %s", mode, result
+        )
+
+    hass.services.async_register(
+        DOMAIN,
+        "diagnose",
+        handle_diagnose,
+        schema=vol.Schema({
+            vol.Required("entity_id"): cv.entity_id,
+            vol.Optional("mode", default="map"): str,
+        }),
+    )
+
     websocket_api.async_register_command(hass, websocket_get_rooms)
+    websocket_api.async_register_command(hass, websocket_diagnostics)
 
     return True
 
