@@ -375,6 +375,68 @@ def diagnose_map_listener(entity, hass):
     }
 
 
+def diagnose_grid_rooms(entity, hass):
+    entity_id = entity.entity_id
+
+    packet_cache = hass.data.get(DOMAIN, {}).get("packet_cache", {})
+    packet = packet_cache.get(entity_id)
+
+    if packet is None:
+        return {
+            "status": "no_grid",
+            "entity_id": entity_id,
+        }
+
+    grid = packet["grid"]
+    width = packet["width"]
+    height = packet["height"]
+
+    result = []
+
+    for room in packet["rooms"]:
+        value = room["pixel_value"]
+        points = []
+
+        for index, grid_value in enumerate(grid):
+            if grid_value == value:
+                x = index % width
+                y = index // width
+                points.append((x, y))
+
+        if not points:
+            result.append({
+                "id": room["id"],
+                "name": room["name"],
+                "pixel_value": value,
+                "pixel_count": 0,
+                "center": None,
+            })
+            continue
+
+        center_x = round(sum(x for x, _ in points) / len(points))
+        center_y = round(sum(y for _, y in points) / len(points))
+
+        result.append({
+            "id": room["id"],
+            "name": room["name"],
+            "pixel_value": value,
+            "pixel_count": len(points),
+            "center": {
+                "x": center_x,
+                "y": center_y,
+            },
+        })
+
+    return {
+        "status": "ok",
+        "entity_id": entity_id,
+        "map_id": packet["map_id"],
+        "width": width,
+        "height": height,
+        "rooms": result,
+    }
+
+
 async def diagnose(entity, mode="map", hass=None):
     if mode == "map":
         return diagnose_map(entity)
@@ -396,6 +458,11 @@ async def diagnose(entity, mode="map", hass=None):
         if hass is None:
             raise ValueError("Home Assistant instance required")
         return register_map_cache(entity, hass)
+    if mode == "grid_rooms":
+        if hass is None:
+            raise ValueError("Home Assistant instance required")
+        return diagnose_grid_rooms(entity, hass)
+
     if mode == "map_store":
         if hass is None:
             raise ValueError("Home Assistant instance required")
@@ -422,6 +489,13 @@ async def diagnose(entity, mode="map", hass=None):
                 else None
             ),
         }
+    if mode == "refresh":
+        await entity.coordinator.api.refresh()
+        return {
+            "status": "refresh_requested",
+            "entity_id": entity.entity_id,
+        }
+
     if mode == "image":
         return diagnose_image(entity)
 

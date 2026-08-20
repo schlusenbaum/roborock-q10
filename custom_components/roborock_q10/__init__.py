@@ -4,7 +4,7 @@ import voluptuous as vol
 
 from homeassistant.components import websocket_api
 from homeassistant.components.vacuum import DATA_COMPONENT
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, EVENT_STATE_CHANGED
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import discovery
 from .diagnostics import diagnose
@@ -13,6 +13,72 @@ from .diagnostics import diagnose
 DOMAIN = "roborock_q10"
 WS_GET_ROOMS = "roborock_q10/get_rooms"
 EVENT_MAP_UPDATED = "roborock_q10_map_updated"
+
+
+def _register_q10_packet_listener(hass, entity):
+    """Store decoded Q10 map packets without modifying the Roborock core."""
+    listeners = hass.data.setdefault(DOMAIN, {}).setdefault(
+        "packet_listeners", {}
+    )
+
+    entity_id = entity.entity_id
+
+    if entity_id in listeners:
+        return
+
+    api = entity.coordinator.api
+    original_handle_message = api._handle_message
+
+    def wrapped_handle_message(message):
+        from roborock.map.b01_q10_map_parser import Q10MapPacket
+
+        if isinstance(message, Q10MapPacket):
+            maps = hass.data.setdefault(DOMAIN, {}).setdefault(
+                "maps", {}
+            ).setdefault(entity_id, {})
+
+            maps[str(message.map_id)] = {
+                "map_id": message.map_id,
+                "width": message.width,
+                "height": message.height,
+                "grid": bytes(message.grid),
+                "rooms": [
+                    {
+                        "id": room.id,
+                        "name": room.name,
+                        "raw_name": room.raw_name,
+                        "pixel_value": room.pixel_value,
+                    }
+                    for room in message.rooms
+                ],
+            }
+
+            catalog = hass.data.setdefault(DOMAIN, {}).setdefault(
+                "map_catalog", {}
+            ).setdefault(entity_id, {})
+
+            catalog[str(message.map_id)] = {
+                "map_id": message.map_id,
+                "width": message.width,
+                "height": message.height,
+                "rooms": [
+                    {
+                        "id": room.id,
+                        "name": room.name,
+                    }
+                    for room in message.rooms
+                ],
+            }
+
+            hass.bus.async_fire(
+                EVENT_MAP_UPDATED,
+                {"entity_id": entity_id},
+            )
+
+        return original_handle_message(message)
+
+    api._handle_message = wrapped_handle_message
+    listeners[entity_id] = original_handle_message
 
 
 def _room_data(entity):
@@ -235,14 +301,93 @@ async def async_setup(hass: HomeAssistant, config) -> bool:
 
 async def async_setup_entry(hass, entry):
     entity_id = entry.data.get("entity_id")
-    if entity_id:
-        await discovery.async_load_platform(
-            hass,
-            "select",
-            DOMAIN,
-            {"entity_id": entity_id},
-            {},
+
+    if not entity_id:
+        return True
+
+
+    await discovery.async_load_platform(
+        hass,
+        "button",
+        DOMAIN,
+        {"entity_id": entity_id},
+        {},
+    )
+
+    await discovery.async_load_platform(
+        hass,
+        "switch",
+        DOMAIN,
+        {"entity_id": entity_id},
+        {},
+    )
+
+    await discovery.async_load_platform(
+        hass,
+        "sensor",
+        DOMAIN,
+        {"entity_id": entity_id},
+        {},
+    )
+
+    async def try_register(_event=None):
+        entity = hass.data[DATA_COMPONENT].get_entity(entity_id)
+
+        if entity is None:
+            return
+
+        loaded_platforms = hass.data.setdefault(DOMAIN, {}).setdefault(
+            "loaded_platforms", set()
         )
+        select_key = f"select:{entity_id}"
+
+        if select_key not in loaded_platforms:
+            loaded_platforms.add(select_key)
+
+            await discovery.async_load_platform(
+                hass,
+                "select",
+                DOMAIN,
+                {"entity_id": entity_id},
+                {},
+            )
+
+        _register_q10_packet_listener(hass, entity)
+
+        startup_refreshes = hass.data.setdefault(DOMAIN, {}).setdefault(
+            "startup_refreshes", set()
+        )
+
+        if entity_id not in startup_refreshes:
+            try:
+                await entity.coordinator.api.refresh()
+            except Exception as err:
+                import logging
+
+                logging.getLogger(__name__).warning(
+                    "Q10 STARTUP REFRESH FAILED: entity_id=%s error=%s",
+                    entity_id,
+                    err,
+                )
+            else:
+                startup_refreshes.add(entity_id)
+
+                import logging
+
+                logging.getLogger(__name__).warning(
+                    "Q10 STARTUP REFRESH: entity_id=%s",
+                    entity_id,
+                )
+
+    hass.data.setdefault(DOMAIN, {}).setdefault(
+        "setup_listeners", {}
+    )[entity_id] = hass.bus.async_listen(
+        EVENT_STATE_CHANGED,
+        try_register,
+    )
+
+    await try_register()
+
     return True
 
 
