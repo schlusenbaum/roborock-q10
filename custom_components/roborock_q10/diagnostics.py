@@ -74,10 +74,14 @@ def diagnose_map(entity):
 def diagnose_objects(entity):
     result = {}
 
+    coordinator = getattr(entity, "coordinator", None)
+
     objects = {
         "entity": entity,
-        "coordinator": getattr(entity, "coordinator", None),
-        "api": getattr(getattr(entity, "coordinator", None), "api", None),
+        "coordinator": coordinator,
+        "api": getattr(coordinator, "api", None),
+        "device": getattr(coordinator, "device", None),
+        "device_info": getattr(coordinator, "device_info", None),
     }
 
     api = objects["api"]
