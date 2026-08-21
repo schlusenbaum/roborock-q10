@@ -75,8 +75,31 @@ class RoborockQ10WaterLevelSelect(SelectEntity):
                 device_id=vacuum_entry.device_id,
             )
 
+        vacuum = self._vacuum
+
+        if vacuum is not None:
+            self.async_on_remove(
+                vacuum.coordinator.api.status.add_update_listener(
+                    self.async_write_ha_state
+                )
+            )
+
     @property
     def current_option(self):
+        vacuum = self._vacuum
+
+        if vacuum is None:
+            return None
+
+        level = vacuum.coordinator.api.status.water_level
+
+        if level is None:
+            return None
+
+        for name, mapped_level in WATER_LEVELS.items():
+            if mapped_level == level:
+                return name
+
         return None
 
     async def async_select_option(self, option):
