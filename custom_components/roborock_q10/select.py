@@ -1,6 +1,7 @@
 from homeassistant.components.select import SelectEntity
 from homeassistant.components.vacuum import DATA_COMPONENT
 from homeassistant.const import EntityCategory
+
 from roborock.data.b01_q10.b01_q10_code_mappings import (
     B01_Q10_DP,
     YXWaterLevel,
@@ -15,53 +16,67 @@ WATER_LEVELS = {
 }
 
 
+async def async_setup_entry(hass, entry, async_add_entities):
+    entity_id = entry.data.get("entity_id")
 
-async def async_setup_platform(
-    hass,
-    config,
-    async_add_entities,
-    discovery_info=None,
-):
-    entity_id = discovery_info["entity_id"]
-    vacuum = hass.data[DATA_COMPONENT].get_entity(entity_id)
-
-    if vacuum is None:
+    if not entity_id:
         return
 
-    async_add_entities([
-        RoborockQ10WaterLevelSelect(vacuum),
-    ])
+    async_add_entities(
+        [
+            RoborockQ10WaterLevelSelect(
+                hass,
+                entity_id,
+                entry.entry_id,
+            )
+        ]
+    )
 
 
 class RoborockQ10WaterLevelSelect(SelectEntity):
+
     _attr_entity_category = EntityCategory.CONFIG
     _attr_name = "Wasserfluss"
     _attr_icon = "mdi:water"
     _attr_options = list(WATER_LEVELS)
 
-    def __init__(self, vacuum):
-        self._vacuum = vacuum
-        self._attr_unique_id = f"{vacuum.entity_id}_water_level"
+    def __init__(self, hass, vacuum_entity_id, config_entry_id):
+        self.hass = hass
+        self._vacuum_entity_id = vacuum_entity_id
+        self._config_entry_id = config_entry_id
+        self._attr_unique_id = f"{vacuum_entity_id}_water_level"
 
-    async def async_added_to_hass(self):
-        await super().async_added_to_hass()
-        self.async_on_remove(
-            self._vacuum.coordinator.api.status.add_update_listener(
-                self.async_write_ha_state
-            )
+    @property
+    def _vacuum(self):
+        return self.hass.data[DATA_COMPONENT].get_entity(
+            self._vacuum_entity_id
         )
 
     @property
+    def device_info(self):
+        return {
+            "identifiers": {
+                ("roborock", "28ZcwX5EXBeo0jly70p9oF")
+            },
+        }
+
+    async def async_added_to_hass(self):
+        await super().async_added_to_hass()
+
+        from homeassistant.helpers import entity_registry as er
+
+        registry = er.async_get(self.hass)
+
+        vacuum_entry = registry.async_get(self._vacuum_entity_id)
+
+        if vacuum_entry and vacuum_entry.device_id:
+            registry.async_update_entity(
+                self.entity_id,
+                device_id=vacuum_entry.device_id,
+            )
+
+    @property
     def current_option(self):
-        level = self._vacuum.coordinator.api.status.water_level
-
-        if level is None:
-            return None
-
-        for name, mapped_level in WATER_LEVELS.items():
-            if mapped_level == level:
-                return name
-
         return None
 
     async def async_select_option(self, option):
@@ -74,4 +89,3 @@ class RoborockQ10WaterLevelSelect(SelectEntity):
 
         await self._vacuum.coordinator.api.refresh()
         self.async_write_ha_state()
-

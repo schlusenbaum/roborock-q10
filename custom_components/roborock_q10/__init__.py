@@ -306,87 +306,11 @@ async def async_setup_entry(hass, entry):
         return True
 
 
-    await discovery.async_load_platform(
-        hass,
-        "button",
-        DOMAIN,
-        {"entity_id": entity_id},
-        {},
+    await hass.config_entries.async_forward_entry_setups(
+        entry,
+        ["switch", "sensor", "select"],
     )
 
-    await discovery.async_load_platform(
-        hass,
-        "switch",
-        DOMAIN,
-        {"entity_id": entity_id},
-        {},
-    )
-
-    await discovery.async_load_platform(
-        hass,
-        "sensor",
-        DOMAIN,
-        {"entity_id": entity_id},
-        {},
-    )
-
-    async def try_register(_event=None):
-        entity = hass.data[DATA_COMPONENT].get_entity(entity_id)
-
-        if entity is None:
-            return
-
-        loaded_platforms = hass.data.setdefault(DOMAIN, {}).setdefault(
-            "loaded_platforms", set()
-        )
-        select_key = f"select:{entity_id}"
-
-        if select_key not in loaded_platforms:
-            loaded_platforms.add(select_key)
-
-            await discovery.async_load_platform(
-                hass,
-                "select",
-                DOMAIN,
-                {"entity_id": entity_id},
-                {},
-            )
-
-        _register_q10_packet_listener(hass, entity)
-
-        startup_refreshes = hass.data.setdefault(DOMAIN, {}).setdefault(
-            "startup_refreshes", set()
-        )
-
-        if entity_id not in startup_refreshes:
-            try:
-                await entity.coordinator.api.refresh()
-            except Exception as err:
-                import logging
-
-                logging.getLogger(__name__).warning(
-                    "Q10 STARTUP REFRESH FAILED: entity_id=%s error=%s",
-                    entity_id,
-                    err,
-                )
-            else:
-                startup_refreshes.add(entity_id)
-
-                import logging
-
-                logging.getLogger(__name__).warning(
-                    "Q10 STARTUP REFRESH: entity_id=%s",
-                    entity_id,
-                )
-
-    hass.data.setdefault(DOMAIN, {}).setdefault(
-        "setup_listeners", {}
-    )[entity_id] = hass.bus.async_listen(
-        EVENT_STATE_CHANGED,
-        try_register,
-    )
-
-    await try_register()
 
     return True
 

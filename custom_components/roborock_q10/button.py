@@ -6,16 +6,23 @@ from homeassistant.exceptions import HomeAssistantError
 
 
 
-async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
+async def async_setup_entry(hass, entry, async_add_entities):
     """Set up the Q10 refresh button."""
-    entity_id = (discovery_info or {}).get("entity_id")
+    entity_id = entry.data.get("entity_id")
 
     if not entity_id:
         return
 
-    async_add_entities([RoborockQ10RefreshButton(hass, entity_id)])
-
-
+    async_add_entities(
+        [
+            RoborockQ10RefreshButton(
+                hass,
+                entity_id,
+                entry.entry_id,
+            )
+        ]
+    )
+    
 class RoborockQ10RefreshButton(ButtonEntity):
     """Request a fresh map push from a Roborock Q10."""
 
@@ -23,12 +30,24 @@ class RoborockQ10RefreshButton(ButtonEntity):
     _attr_name = "Karte aktualisieren"
     _attr_icon = "mdi:map-refresh"
 
-    def __init__(self, hass, vacuum_entity_id):
+    def __init__(self, hass, vacuum_entity_id, config_entry_id):
+        self._config_entry_id = config_entry_id
         self.hass = hass
         self._vacuum_entity_id = vacuum_entity_id
         object_id = vacuum_entity_id.split(".", 1)[1]
         self.entity_id = f"button.{object_id}_karte_aktualisieren"
         self._attr_unique_id = f"{vacuum_entity_id}_refresh_map"
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {
+                ("roborock_q10", self._vacuum_entity_id)
+            },
+            "name": "Roborock Q10 S5",
+            "manufacturer": "Roborock",
+            "model": "roborock.vacuum.ss07",
+            "config_entry_id": self._config_entry_id,
+        }
 
     async def async_press(self):
         """Request the Q10 to push its current map."""

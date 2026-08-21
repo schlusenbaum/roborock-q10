@@ -7,14 +7,14 @@ from homeassistant.core import callback
 from . import DOMAIN, EVENT_MAP_UPDATED
 
 
-async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
+async def async_setup_entry(hass, entry, async_add_entities):
     """Set up the Q10 map catalog sensor."""
-    entity_id = (discovery_info or {}).get("entity_id")
+    entity_id = entry.data.get("entity_id")
 
     if not entity_id:
         return
 
-    await async_add_entities([RoborockQ10MapCatalogSensor(hass, entity_id)])
+    async_add_entities([RoborockQ10MapCatalogSensor(hass, entity_id)])
 
 
 class RoborockQ10MapCatalogSensor(SensorEntity):

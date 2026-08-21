@@ -13,14 +13,22 @@ _LOGGER = logging.getLogger(__name__)
 _REFRESH_INTERVAL = timedelta(minutes=15)
 
 
-async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
+async def async_setup_entry(hass, entry, async_add_entities):
     """Set up the periodic Q10 refresh switch."""
-    entity_id = (discovery_info or {}).get("entity_id")
+    entity_id = entry.data.get("entity_id")
 
     if not entity_id:
         return
 
-    async_add_entities([RoborockQ10PeriodicRefreshSwitch(hass, entity_id)])
+    async_add_entities(
+        [
+            RoborockQ10PeriodicRefreshSwitch(
+                hass,
+                entity_id,
+                entry.entry_id,
+            )
+        ]
+    )
 
 
 class RoborockQ10PeriodicRefreshSwitch(RestoreEntity, SwitchEntity):
@@ -30,7 +38,8 @@ class RoborockQ10PeriodicRefreshSwitch(RestoreEntity, SwitchEntity):
     _attr_name = "Automatische Kartenaktualisierung"
     _attr_icon = "mdi:refresh-auto"
 
-    def __init__(self, hass, vacuum_entity_id):
+    def __init__(self, hass, vacuum_entity_id, config_entry_id):
+        self._config_entry_id = config_entry_id
         self.hass = hass
         self._vacuum_entity_id = vacuum_entity_id
         self._remove_interval = None
