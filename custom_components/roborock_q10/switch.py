@@ -54,6 +54,18 @@ class RoborockQ10PeriodicRefreshSwitch(RestoreEntity, SwitchEntity):
         """Restore the previous switch state."""
         await super().async_added_to_hass()
 
+        from homeassistant.helpers import entity_registry as er
+
+        registry = er.async_get(self.hass)
+
+        vacuum_entry = registry.async_get(self._vacuum_entity_id)
+
+        if vacuum_entry and vacuum_entry.device_id:
+            registry.async_update_entity(
+                self.entity_id,
+                device_id=vacuum_entry.device_id,
+            )
+
         last_state = await self.async_get_last_state()
         self._attr_is_on = (
             last_state is not None and last_state.state == STATE_ON

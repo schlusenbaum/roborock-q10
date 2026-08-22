@@ -60,6 +60,19 @@ class RoborockQ10MapCatalogSensor(SensorEntity):
     async def async_added_to_hass(self):
         """Update whenever a Q10 map packet is received."""
         await super().async_added_to_hass()
+
+        from homeassistant.helpers import entity_registry as er
+
+        registry = er.async_get(self.hass)
+
+        vacuum_entry = registry.async_get(self._vacuum_entity_id)
+
+        if vacuum_entry and vacuum_entry.device_id:
+            registry.async_update_entity(
+                self.entity_id,
+                device_id=vacuum_entry.device_id,
+            )
+
         self.async_on_remove(
             self.hass.bus.async_listen(
                 EVENT_MAP_UPDATED,
