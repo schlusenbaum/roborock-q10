@@ -286,6 +286,12 @@ def diagnose_handle_message(entity, hass):
     def wrapped_handle_message(message):
         from roborock.map.b01_q10_map_parser import Q10MapPacket
 
+        _LOGGER.warning(
+            "Q10 MESSAGE: type=%s repr=%s",
+            type(message).__name__,
+            repr(message)[:1000],
+        )
+
         if isinstance(message, Q10MapPacket):
             from collections import Counter
 

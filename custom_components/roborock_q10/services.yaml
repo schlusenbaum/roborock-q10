@@ -18,3 +18,15 @@ diagnose:
         select:
           options:
             - map
+
+get_rooms:
+  name: Räume abrufen
+  description: Ruft die aktuellen Räume des Roborock Q10 ab.
+  fields:
+    entity_id:
+      name: Roboter
+      description: Die Q10 Vacuum-Entität.
+      required: true
+      selector:
+        entity:
+          domain: vacuum

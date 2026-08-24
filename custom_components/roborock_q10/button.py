@@ -37,17 +37,22 @@ class RoborockQ10RefreshButton(ButtonEntity):
         object_id = vacuum_entity_id.split(".", 1)[1]
         self.entity_id = f"button.{object_id}_karte_aktualisieren"
         self._attr_unique_id = f"{vacuum_entity_id}_refresh_map"
-    @property
-    def device_info(self):
-        return {
-            "identifiers": {
-                ("roborock_q10", self._vacuum_entity_id)
-            },
-            "name": "Roborock Q10 S5",
-            "manufacturer": "Roborock",
-            "model": "roborock.vacuum.ss07",
-            "config_entry_id": self._config_entry_id,
-        }
+
+    async def async_added_to_hass(self):
+        """Attach button to the existing vacuum device."""
+        await super().async_added_to_hass()
+
+        from homeassistant.helpers import entity_registry as er
+
+        registry = er.async_get(self.hass)
+
+        vacuum_entry = registry.async_get(self._vacuum_entity_id)
+
+        if vacuum_entry and vacuum_entry.device_id:
+            registry.async_update_entity(
+                self.entity_id,
+                device_id=vacuum_entry.device_id,
+            )
 
     async def async_press(self):
         """Request the Q10 to push its current map."""
