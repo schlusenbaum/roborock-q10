@@ -77,7 +77,7 @@ class RoborockQ10CleanSelectedRoomButton(ButtonEntity):
     """Clean the selected Q10 room."""
 
     _attr_has_entity_name = True
-    _attr_name = "Ausgewählten Raum reinigen"
+    _attr_name = "Ausgewählte Räume reinigen"
     _attr_icon = "mdi:floor-plan"
 
     def __init__(self, hass, vacuum_entity_id, config_entry_id):

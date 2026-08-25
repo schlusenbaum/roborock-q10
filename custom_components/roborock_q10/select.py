@@ -12,6 +12,8 @@ _LOGGER = logging.getLogger(__name__)
 from roborock.data.b01_q10.b01_q10_code_mappings import (
     B01_Q10_DP,
     YXWaterLevel,
+    YXFanLevel,
+    YXCleanLine,
 )
 
 
@@ -20,6 +22,21 @@ WATER_LEVELS = {
     "Niedrig": YXWaterLevel.LOW,
     "Mittel": YXWaterLevel.MEDIUM,
     "Hoch": YXWaterLevel.HIGH,
+}
+
+
+FAN_LEVELS = {
+    "Leise": YXFanLevel.QUIET,
+    "Normal": YXFanLevel.BALANCED,
+    "Turbo": YXFanLevel.TURBO,
+    "Max": YXFanLevel.MAX,
+    "Max+": YXFanLevel.MAX_PLUS,
+}
+
+CLEAN_LINES = {
+    "Leicht": YXCleanLine.DAILY,
+    "Mittel": YXCleanLine.FAST,
+    "Intensiv": YXCleanLine.FINE,
 }
 
 
@@ -40,6 +57,16 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 entry.entry_id,
             ),
             RoborockQ10RoomSelect(
+                hass,
+                entity_id,
+                entry.entry_id,
+            ),
+            RoborockQ10FanLevelSelect(
+                hass,
+                entity_id,
+                entry.entry_id,
+            ),
+            RoborockQ10CleanLineSelect(
                 hass,
                 entity_id,
                 entry.entry_id,
@@ -218,4 +245,119 @@ class RoborockQ10RoomSelect(SelectEntity):
             self._attr_current_option,
         )
 
+        self.async_write_ha_state()
+
+
+class RoborockQ10FanLevelSelect(SelectEntity):
+    """Select Q10 vacuum power."""
+
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_name = "Saugleistung"
+    _attr_icon = "mdi:fan"
+
+    def __init__(self, hass, vacuum_entity_id, config_entry_id):
+        self.hass = hass
+        self._vacuum_entity_id = vacuum_entity_id
+        self._config_entry_id = config_entry_id
+        self._attr_unique_id = f"{vacuum_entity_id}_fan_level"
+
+    @property
+    def _vacuum(self):
+        return self.hass.data[DATA_COMPONENT].get_entity(
+            self._vacuum_entity_id
+        )
+
+    async def async_added_to_hass(self):
+        await super().async_added_to_hass()
+        from homeassistant.helpers import entity_registry as er
+        registry = er.async_get(self.hass)
+        vacuum_entry = registry.async_get(self._vacuum_entity_id)
+        if vacuum_entry and vacuum_entry.device_id:
+            registry.async_update_entity(
+                self.entity_id,
+                device_id=vacuum_entry.device_id,
+            )
+
+        vacuum = self._vacuum
+        if vacuum is not None:
+            self.async_on_remove(
+                vacuum.coordinator.api.status.add_update_listener(
+                    self.async_write_ha_state
+                )
+            )
+
+    @property
+    def options(self):
+        return list(FAN_LEVELS)
+
+    @property
+    def current_option(self):
+        vacuum = self._vacuum
+        if vacuum is None:
+            return None
+        level = vacuum.coordinator.api.status.fan_level
+        for name, value in FAN_LEVELS.items():
+            if value == level:
+                return name
+        return None
+
+    async def async_select_option(self, option):
+        await self._vacuum.coordinator.api.vacuum.set_fan_level(
+            FAN_LEVELS[option]
+        )
+        await self._vacuum.coordinator.api.refresh()
+        self.async_write_ha_state()
+
+
+class RoborockQ10CleanLineSelect(SelectEntity):
+    """Select Q10 cleaning route."""
+
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_name = "Reinigungsroute"
+    _attr_icon = "mdi:route"
+
+    def __init__(self, hass, vacuum_entity_id, config_entry_id):
+        self.hass = hass
+        self._vacuum_entity_id = vacuum_entity_id
+        self._config_entry_id = config_entry_id
+        self._attr_unique_id = f"{vacuum_entity_id}_clean_line"
+
+    @property
+    def _vacuum(self):
+        return self.hass.data[DATA_COMPONENT].get_entity(
+            self._vacuum_entity_id
+        )
+
+    async def async_added_to_hass(self):
+        await super().async_added_to_hass()
+        from homeassistant.helpers import entity_registry as er
+        registry = er.async_get(self.hass)
+        vacuum_entry = registry.async_get(self._vacuum_entity_id)
+        if vacuum_entry and vacuum_entry.device_id:
+            registry.async_update_entity(
+                self.entity_id,
+                device_id=vacuum_entry.device_id,
+            )
+
+    @property
+    def options(self):
+        return list(CLEAN_LINES)
+
+    @property
+    def current_option(self):
+        vacuum = self._vacuum
+        if vacuum is None:
+            return None
+        line = vacuum.coordinator.api.status.clean_line
+        for name, value in CLEAN_LINES.items():
+            if value == line:
+                return name
+        return None
+
+    async def async_select_option(self, option):
+        await self._vacuum.coordinator.api.command.send(
+            B01_Q10_DP.COMMON,
+            params={"78": CLEAN_LINES[option].code},
+        )
+        await self._vacuum.coordinator.api.refresh()
         self.async_write_ha_state()
