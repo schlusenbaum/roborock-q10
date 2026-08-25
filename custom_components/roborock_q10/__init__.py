@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 import voluptuous as vol
 
@@ -8,6 +9,8 @@ from homeassistant.core import HomeAssistant, EVENT_STATE_CHANGED
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import discovery
 from .diagnostics import diagnose
+
+_LOGGER = logging.getLogger(__name__)
 
 
 DOMAIN = "roborock_q10"
@@ -33,8 +36,7 @@ def _register_q10_packet_listener(hass, entity):
         from roborock.map.b01_q10_map_parser import Q10MapPacket
 
         if isinstance(message, Q10MapPacket):
-            import logging
-            logging.getLogger("custom_components.roborock_q10").warning(
+            _LOGGER.debug(
                 "Q10 PACKET RECEIVED map_id=%s rooms=%s",
                 message.map_id,
                 len(message.rooms),
@@ -157,10 +159,7 @@ def _register_map_listener(hass, entity):
     def map_updated():
         nonlocal last_fire
 
-        import logging
-        logging.getLogger("custom_components.roborock_q10").warning(
-            "Q10 MAP UPDATE CALLBACK ausgelöst"
-        )
+        _LOGGER.debug("Q10 MAP UPDATE CALLBACK ausgelöst")
 
         now = hass.loop.time()
 
@@ -177,6 +176,10 @@ def _register_map_listener(hass, entity):
             ] = image_content
 
         rooms = entity.coordinator.api.map.rooms or []
+        _LOGGER.debug(
+            "Q10 MAP UPDATE ROOMS: %s",
+            [(room.id, room.name) for room in rooms],
+        )
 
         hass.data.setdefault(DOMAIN, {}).setdefault("rooms", {})[
             entity_id
@@ -193,11 +196,14 @@ def _register_map_listener(hass, entity):
     listeners[entity_id] = entity.coordinator.api.map.add_update_listener(
         map_updated
     )
+    _LOGGER.debug(
+        "Q10 MAP LISTENER REGISTRIERT: %s",
+        entity_id,
+    )
 
 async def handle_get_rooms(call):
     import logging
 
-    logger = logging.getLogger("custom_components.roborock_q10")
 
     entity_id = call.data["entity_id"]
     entity = call.hass.data[DATA_COMPONENT].get_entity(entity_id)
@@ -206,6 +212,21 @@ async def handle_get_rooms(call):
         raise ValueError(f"Entity not found: {entity_id}")
 
     room_names = call.data.get("room_names", [])
+
+    if not room_ids and not room_names:
+        selected_room = (
+            hass.data.get(DOMAIN, {})
+            .get("selected_rooms", {})
+            .get(entity_id)
+        )
+
+        _LOGGER.debug(
+            "Q10 CLEAN SELECTED ROOM: %s",
+            selected_room,
+        )
+
+        if selected_room:
+            room_names = [selected_room]
 
     if room_names:
         rooms = entity.coordinator.api.map.rooms or []
@@ -223,17 +244,35 @@ async def handle_get_rooms(call):
 
             room_ids.append(name_to_id[name])
 
-    logger.warning(
+    _LOGGER.debug(
         "Q10 GET_ROOMS: entity=%s gefunden",
         entity_id,
     )
 
-    rooms = _room_data(entity)
+    _register_map_listener(call.hass, entity)
+
+    rooms = entity.coordinator.api.map.rooms or []
+
+    if not rooms:
+        await entity.coordinator.api.refresh()
+        for _ in range(25):
+            rooms = entity.coordinator.api.map.rooms or []
+            if rooms:
+                break
+            await asyncio.sleep(0.2)
+
+    rooms = [
+        {
+            "id": room.id,
+            "name": room.name,
+        }
+        for room in rooms
+    ]
 
     call.hass.data.setdefault(DOMAIN, {}).setdefault("rooms", {})[entity_id] = rooms
 
-    logger.warning(
-        "Q10 GET_ROOMS: _room_data liefert %s Räume: %s",
+    _LOGGER.debug(
+        "Q10 GET_ROOMS: liefert %s Räume: %s",
         len(rooms),
         rooms,
     )
@@ -324,7 +363,6 @@ async def handle_clean_rooms(hass, call):
     """Start cleaning selected Q10 rooms."""
     import logging
 
-    logger = logging.getLogger("custom_components.roborock_q10")
 
     entity_id = call.data["entity_id"]
 
@@ -339,6 +377,21 @@ async def handle_clean_rooms(hass, call):
         raise ValueError(f"Entity not found: {entity_id}")
 
     room_names = call.data.get("room_names", [])
+
+    if not room_ids and not room_names:
+        selected_room = (
+            hass.data.get(DOMAIN, {})
+            .get("selected_rooms", {})
+            .get(entity_id)
+        )
+
+        _LOGGER.debug(
+            "Q10 CLEAN SELECTED ROOM: %s",
+            selected_room,
+        )
+
+        if selected_room:
+            room_names = [selected_room]
 
     if room_names:
         rooms = entity.coordinator.api.map.rooms or []
@@ -393,10 +446,7 @@ async def async_setup(hass: HomeAssistant, config) -> bool:
 
         result = await diagnose(entity, mode, hass)
 
-        import logging
-        logging.getLogger("custom_components.roborock_q10").warning(
-            "Q10 DIAGNOSTICS [%s]: %s", mode, result
-        )
+        _LOGGER.debug("Q10 DIAGNOSTICS [%s]: %s", mode, result)
 
     hass.services.async_register(
         DOMAIN,
@@ -418,8 +468,7 @@ async def async_setup(hass: HomeAssistant, config) -> bool:
     )
 
     async def clean_rooms_service(call):
-        import logging
-        logging.getLogger("custom_components.roborock_q10").warning("Q10 SERVICE CALLBACK ERREICHT")
+        _LOGGER.debug("Q10 SERVICE CALLBACK ERREICHT: %s", call.data)
         await handle_clean_rooms(hass, call)
 
     hass.services.async_register(
@@ -440,17 +489,30 @@ async def async_setup(hass: HomeAssistant, config) -> bool:
 
 
 async def async_setup_entry(hass, entry):
+    _LOGGER.debug(
+        "Q10 SETUP_ENTRY ERREICHT: %s",
+        entry.entry_id,
+    )
+
     entity_id = entry.data.get("entity_id")
 
     if not entity_id:
         return True
-
 
     await hass.config_entries.async_forward_entry_setups(
         entry,
         ["switch", "sensor", "select", "button"],
     )
 
+    for _ in range(25):
+        entity = hass.data[DATA_COMPONENT].get_entity(entity_id)
+
+        if entity is not None:
+            _register_map_listener(hass, entity)
+            await entity.coordinator.api.refresh()
+            break
+
+        await asyncio.sleep(0.2)
 
     return True
 
