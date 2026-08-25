@@ -211,38 +211,7 @@ async def handle_get_rooms(call):
     if entity is None:
         raise ValueError(f"Entity not found: {entity_id}")
 
-    room_names = call.data.get("room_names", [])
 
-    if not room_ids and not room_names:
-        selected_room = (
-            hass.data.get(DOMAIN, {})
-            .get("selected_rooms", {})
-            .get(entity_id)
-        )
-
-        _LOGGER.debug(
-            "Q10 CLEAN SELECTED ROOM: %s",
-            selected_room,
-        )
-
-        if selected_room:
-            room_names = [selected_room]
-
-    if room_names:
-        rooms = entity.coordinator.api.map.rooms or []
-
-        name_to_id = {
-            room.name: room.id
-            for room in rooms
-        }
-
-        for name in room_names:
-            if name not in name_to_id:
-                raise ValueError(
-                    f"Unknown Q10 room name: {name}. Available: {list(name_to_id)}"
-                )
-
-            room_ids.append(name_to_id[name])
 
     _LOGGER.debug(
         "Q10 GET_ROOMS: entity=%s gefunden",
@@ -379,19 +348,20 @@ async def handle_clean_rooms(hass, call):
     room_names = call.data.get("room_names", [])
 
     if not room_ids and not room_names:
-        selected_room = (
+        selected_rooms = (
             hass.data.get(DOMAIN, {})
             .get("selected_rooms", {})
-            .get(entity_id)
+            .get(entity_id, [])
         )
 
         _LOGGER.debug(
-            "Q10 CLEAN SELECTED ROOM: %s",
-            selected_room,
+            "Q10 CLEAN SELECTED ROOMS: %s -> %s",
+            entity_id,
+            selected_rooms,
         )
 
-        if selected_room:
-            room_names = [selected_room]
+        if selected_rooms:
+            room_names = selected_rooms
 
     if room_names:
         rooms = entity.coordinator.api.map.rooms or []
@@ -430,6 +400,41 @@ async def handle_clean_rooms(hass, call):
     await entity.coordinator.api.vacuum.clean_segments(room_ids)
 
 
+async def handle_select_rooms(hass, call):
+    """Store selected Q10 rooms for later cleaning."""
+    entity_id = call.data["entity_id"]
+    room_names = call.data.get("room_names", [])
+
+    entity = hass.data[DATA_COMPONENT].get_entity(entity_id)
+
+    if entity is None:
+        raise ValueError(f"Entity not found: {entity_id}")
+
+    rooms = entity.coordinator.api.map.rooms or []
+
+    available = {room.name for room in rooms}
+
+    unknown = [
+        name for name in room_names
+        if name not in available
+    ]
+
+    if unknown:
+        raise ValueError(
+            f"Unknown Q10 room name(s): {unknown}. Available: {sorted(available)}"
+        )
+
+    hass.data.setdefault(DOMAIN, {}).setdefault(
+        "selected_rooms", {}
+    )[entity_id] = room_names
+
+    _LOGGER.debug(
+        "Q10 SELECTED ROOMS: %s -> %s",
+        entity_id,
+        room_names,
+    )
+
+
 async def async_setup(hass: HomeAssistant, config) -> bool:
     """Set up the Roborock Q10 helper."""
     component = hass.data.setdefault(DOMAIN, {})
@@ -464,6 +469,19 @@ async def async_setup(hass: HomeAssistant, config) -> bool:
         handle_get_rooms,
         schema=vol.Schema({
             vol.Required("entity_id"): cv.entity_id,
+        }),
+    )
+
+    async def select_rooms_service(call):
+        await handle_select_rooms(hass, call)
+
+    hass.services.async_register(
+        DOMAIN,
+        "select_rooms",
+        select_rooms_service,
+        schema=vol.Schema({
+            vol.Required("entity_id"): cv.entity_id,
+            vol.Required("room_names"): [str],
         }),
     )
 
