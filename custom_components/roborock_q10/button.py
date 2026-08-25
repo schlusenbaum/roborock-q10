@@ -19,7 +19,12 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 hass,
                 entity_id,
                 entry.entry_id,
-            )
+            ),
+            RoborockQ10CleanSelectedRoomButton(
+                hass,
+                entity_id,
+                entry.entry_id,
+            ),
         ]
     )
     
@@ -66,3 +71,45 @@ class RoborockQ10RefreshButton(ButtonEntity):
             )
 
         await entity.coordinator.api.refresh()
+
+
+class RoborockQ10CleanSelectedRoomButton(ButtonEntity):
+    """Clean the selected Q10 room."""
+
+    _attr_has_entity_name = True
+    _attr_name = "Ausgewählten Raum reinigen"
+    _attr_icon = "mdi:floor-plan"
+
+    def __init__(self, hass, vacuum_entity_id, config_entry_id):
+        self.hass = hass
+        self._vacuum_entity_id = vacuum_entity_id
+        self._config_entry_id = config_entry_id
+
+        object_id = vacuum_entity_id.split(".", 1)[1]
+        self.entity_id = f"button.{object_id}_ausgewaehlten_raum_reinigen"
+        self._attr_unique_id = f"{vacuum_entity_id}_clean_selected_room"
+
+    async def async_added_to_hass(self):
+        """Attach button to the existing vacuum device."""
+        await super().async_added_to_hass()
+
+        from homeassistant.helpers import entity_registry as er
+
+        registry = er.async_get(self.hass)
+        vacuum_entry = registry.async_get(self._vacuum_entity_id)
+
+        if vacuum_entry and vacuum_entry.device_id:
+            registry.async_update_entity(
+                self.entity_id,
+                device_id=vacuum_entry.device_id,
+            )
+
+    async def async_press(self):
+        """Start cleaning the selected room."""
+        await self.hass.services.async_call(
+            "roborock_q10",
+            "clean_rooms",
+            {
+                "entity_id": self._vacuum_entity_id,
+            },
+        )
