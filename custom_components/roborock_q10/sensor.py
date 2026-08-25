@@ -14,7 +14,11 @@ async def async_setup_entry(hass, entry, async_add_entities):
     if not entity_id:
         return
 
-    async_add_entities([RoborockQ10MapCatalogSensor(hass, entity_id), RoborockQ10RoomsSensor(hass, entity_id)])
+    async_add_entities([
+        RoborockQ10MapCatalogSensor(hass, entity_id),
+        RoborockQ10RoomsSensor(hass, entity_id),
+        RoborockQ10SelectedRoomsSensor(hass, entity_id),
+    ])
 
 
 class RoborockQ10RoomsSensor(SensorEntity):
@@ -145,3 +149,62 @@ class RoborockQ10MapCatalogSensor(SensorEntity):
             .get("map_catalog", {})
             .get(self._vacuum_entity_id, {})
         )
+
+
+class RoborockQ10SelectedRoomsSensor(SensorEntity):
+    """Show selected Q10 cleaning rooms."""
+
+    _attr_has_entity_name = True
+    _attr_name = "Ausgewählte Räume"
+    _attr_icon = "mdi:format-list-checks"
+
+    def __init__(self, hass, vacuum_entity_id):
+        self.hass = hass
+        self._vacuum_entity_id = vacuum_entity_id
+
+        object_id = vacuum_entity_id.split(".", 1)[1]
+        self.entity_id = f"sensor.{object_id}_ausgewaehlte_raeume"
+        self._attr_unique_id = f"{vacuum_entity_id}_selected_rooms"
+
+    @property
+    def native_value(self):
+        return ", ".join(self._rooms())
+
+    @property
+    def extra_state_attributes(self):
+        return {
+            "rooms": self._rooms(),
+        }
+
+    def _rooms(self):
+        return (
+            self.hass.data.get(DOMAIN, {})
+            .get("selected_rooms", {})
+            .get(self._vacuum_entity_id, [])
+        )
+
+    async def async_added_to_hass(self):
+        await super().async_added_to_hass()
+
+        from homeassistant.helpers import entity_registry as er
+
+        registry = er.async_get(self.hass)
+        vacuum_entry = registry.async_get(self._vacuum_entity_id)
+
+        if vacuum_entry and vacuum_entry.device_id:
+            registry.async_update_entity(
+                self.entity_id,
+                device_id=vacuum_entry.device_id,
+            )
+
+        self.async_on_remove(
+            self.hass.bus.async_listen(
+                "roborock_q10_selected_rooms_updated",
+                self._handle_update,
+            )
+        )
+
+    @callback
+    def _handle_update(self, event):
+        if event.data.get("entity_id") == self._vacuum_entity_id:
+            self.async_write_ha_state()

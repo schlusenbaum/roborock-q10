@@ -428,6 +428,13 @@ async def handle_select_rooms(hass, call):
         "selected_rooms", {}
     )[entity_id] = room_names
 
+    hass.bus.async_fire(
+        "roborock_q10_selected_rooms_updated",
+        {
+            "entity_id": entity_id,
+        },
+    )
+
     _LOGGER.debug(
         "Q10 SELECTED ROOMS: %s -> %s",
         entity_id,
