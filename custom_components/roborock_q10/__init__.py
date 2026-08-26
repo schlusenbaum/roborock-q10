@@ -17,6 +17,8 @@ DOMAIN = "roborock_q10"
 WS_GET_ROOMS = "roborock_q10/get_rooms"
 EVENT_MAP_UPDATED = "roborock_q10_map_updated"
 
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
 
 def _register_q10_packet_listener(hass, entity):
     """Store decoded Q10 map packets without modifying the Roborock core."""
