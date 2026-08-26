@@ -1,44 +1,65 @@
 # Roborock Q10
 
-Home Assistant Custom Integration for Roborock Q10 devices.
+Home-Assistant-Custom-Integration für Roborock-Q10-Geräte.
 
-## Features
+Die Integration erweitert die offizielle Home-Assistant-Roborock-Integration um Q10-spezifische Funktionen für Karten, Räume und Reinigung.
 
-- Q10 map room detection
-- Room IDs and room names
-- WebSocket API for room information
-- Map update events
-- Support for Q10-specific map handling
+> **Wichtig:** Die Integration ersetzt die offizielle Roborock-Integration nicht. Sie verwendet die bereits vorhandene Roborock-Vacuum-Entity und ergänzt sie um zusätzliche Entities und Dienste.
 
-## Installation
+## Funktionen
 
-Install via HACS as a custom repository:
+- Räume direkt aus der Q10-Karte auslesen
+- Raum-IDs und Raumnamen bereitstellen
+- bekannte Q10-Karten katalogisieren
+- Karte manuell aktualisieren
+- Kartenaktualisierung automatisch alle 15 Minuten ausführen
+- Reinigungsraum auswählen
+- ausgewählte Räume reinigen
+- Räume per ID oder Name über Services reinigen
+- Saugleistung einstellen
+- Wasserfluss einstellen
+- Reinigungsroute einstellen
+- Diagnose- und WebSocket-Funktionen bereitstellen
 
-1. Open HACS
-2. Open Integrations
-3. Add this repository as a custom repository
-4. Select `Integration`
-5. Install **Roborock Q10**
-6. Restart Home Assistant
+## Voraussetzungen
 
-## Requirements
+- Home Assistant
+- die offizielle Home-Assistant-Roborock-Integration
+- ein über die offizielle Home-Assistant-Roborock-Integration eingerichteter Roborock Q10
 
-The official Home Assistant Roborock integration must also be installed and configured.
+## Dokumentation
 
-This integration extends the Q10 functionality provided by the official Roborock integration.
+- [Installation](docs/installation.md)
+- [Konfiguration](docs/configuration.md)
+- [Entities](docs/entities.md)
+- [Räume und Karten](docs/rooms-and-maps.md)
+- [Services](docs/services.md)
+- [Automationen](docs/automations.md)
+- [Fehlerbehebung](docs/troubleshooting.md)
+- [Entwicklung](docs/development.md)
 
-## Room IDs
+## Technischer Überblick
 
-The integration reads the room IDs directly from the Q10 map.
+Die Q10-Integration greift auf die bestehende Vacuum-Entity, deren Coordinator und API der offiziellen Roborock-Integration zu. Sie baut keine zweite Roborock-Verbindung und kein zweites physisches Gerät auf.
 
-Example:
+```text
+Roborock Q10
+    |
+    v
+offizielle Roborock-Integration
+    |
+    v
+Vacuum-Entity / Coordinator / API
+    |
+    v
+Roborock Q10 Custom Integration
+    +-- Karten
+    +-- Räume
+    +-- Reinigung
+    +-- Q10-Einstellungen
+    +-- Diagnose
+```
 
-- `1` – Corridor
-- `3` – Kitchen
-- `4` – Entrance Hall
-- `5` – Bad
-- `6` – Wohn/Esszimmer
-
-## License
+## Lizenz
 
 MIT
