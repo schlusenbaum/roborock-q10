@@ -1,21 +1,27 @@
-# Konfiguration
+# Configuration
 
-Die Integration verwendet die bestehende Roborock-Vacuum-Entity als Bezugspunkt.
+The integration is configured through Home Assistant's config flow.
 
-## Grundprinzip
+## Vacuum Entity
 
-Die offizielle Roborock-Integration stellt unter anderem Vacuum-Entity, Coordinator, Roborock-API sowie Karten- und Statusdaten bereit.
+During setup, select the existing vacuum entity created by Home Assistant's official Roborock integration.
 
-Die Q10-Integration verwendet diese Daten und ergänzt Q10-spezifische Funktionen.
+For example:
 
-## Gerätezuordnung
+`vacuum.roborock_q10`
 
-Die zusätzlichen Entities werden nach ihrer Erstellung dem Gerät der ausgewählten Vacuum-Entity zugeordnet.
+The exact entity ID depends on your Home Assistant configuration.
 
-Dadurch erscheinen die zusätzlichen Q10-Entities beim gleichen Home-Assistant-Gerät wie der Roboter.
+## Relationship to the Official Roborock Integration
 
-## Keine zweite Verbindung
+The Q10 integration does not create its own cloud connection.
 
-Die Q10-Integration baut keine separate Roborock-Anmeldung und keine zweite Geräteverbindung auf.
+Instead, it uses the API and coordinator of the existing Roborock vacuum entity.
 
-Änderungen oder Inkompatibilitäten in der offiziellen Roborock-Integration beziehungsweise der darunterliegenden `roborock`-Bibliothek können daher Auswirkungen auf diese Integration haben.
+This means the official Roborock integration must remain installed and configured.
+
+## Map Updates
+
+The integration listens for map updates and stores information about known maps and their rooms.
+
+Map information can also be refreshed manually using the available services.

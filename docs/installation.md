@@ -1,42 +1,35 @@
 # Installation
 
-## Voraussetzungen
+## Prerequisites
 
-Vor der Installation der Q10-Erweiterung muss die offizielle Home-Assistant-Roborock-Integration installiert und eingerichtet sein.
+Before installing this integration, the official Home Assistant Roborock integration must already be configured and working with your Roborock Q10.
 
-Der Roborock Q10 muss dort bereits als Vacuum-Entity verfügbar sein.
+This integration does not connect to the Roborock cloud independently. It extends the existing Roborock vacuum entity provided by Home Assistant.
 
-## HACS
+## Installation via HACS
 
-1. HACS öffnen.
-2. **Integrationen** öffnen.
-3. Das Repository als Custom Repository hinzufügen.
-4. Als Typ **Integration** auswählen.
-5. **Roborock Q10** installieren.
-6. Home Assistant neu starten.
+1. Open HACS in Home Assistant.
+2. Open **Integrations**.
+3. Open the menu and select **Custom repositories**.
+4. Add this GitHub repository.
+5. Select **Integration** as the repository type.
+6. Install **Roborock Q10**.
+7. Restart Home Assistant.
 
-## Manuelle Installation
+## Manual Installation
 
-Das Verzeichnis der Integration muss nach `/config/custom_components/roborock_q10/` kopiert werden.
+Copy the directory
 
-Enthalten sind unter anderem:
+`custom_components/roborock_q10`
 
-```text
-__init__.py
-manifest.json
-config_flow.py
-sensor.py
-select.py
-button.py
-switch.py
-diagnostics.py
-services.yaml
-```
+into the `custom_components` directory of your Home Assistant configuration.
 
-Danach Home Assistant neu starten.
+Restart Home Assistant afterwards.
 
-## Nach der Installation
+## Initial Setup
 
-Die Q10-Integration wird über die Home-Assistant-Konfiguration eingerichtet und mit der bereits vorhandenen Roborock-Vacuum-Entity verknüpft.
+After the restart, add the Roborock Q10 integration through **Settings → Devices & services**.
 
-Die Integration erzeugt dabei kein zweites physisches Roborock-Gerät.
+Select the existing Roborock vacuum entity that represents the Q10.
+
+The integration then creates the additional Q10-specific entities and services.

@@ -1,119 +1,86 @@
-# Entwicklung
+# Development
 
-## Repository-Struktur
+## Architecture
 
-```text
-roborock-q10/
-├── README.md
-├── hacs.json
-├── docs/
-│   ├── installation.md
-│   ├── configuration.md
-│   ├── entities.md
-│   ├── rooms-and-maps.md
-│   ├── services.md
-│   ├── automations.md
-│   ├── troubleshooting.md
-│   └── development.md
-└── custom_components/
-    └── roborock_q10/
-        ├── __init__.py
-        ├── button.py
-        ├── config_flow.py
-        ├── diagnostics.py
-        ├── manifest.json
-        ├── select.py
-        ├── sensor.py
-        ├── services.yaml
-        └── switch.py
-```
+The integration is designed as an extension of Home Assistant's official Roborock integration.
 
-## Module
+It does not establish its own Roborock connection. Instead, it accesses the existing vacuum entity, its coordinator, and the underlying Roborock API.
 
-| Datei | Aufgabe |
-|---|---|
-| `__init__.py` | Setup, Kartenverarbeitung, Services und WebSocket-API |
-| `config_flow.py` | Home-Assistant-Konfigurationsdialog |
-| `sensor.py` | Räume, Kartenübersicht und ausgewählte Räume |
-| `select.py` | Wasserfluss, Reinigungsraum, Saugleistung und Reinigungsroute |
-| `button.py` | Kartenaktualisierung und Reinigung ausgewählter Räume |
-| `switch.py` | automatische Kartenaktualisierung |
-| `diagnostics.py` | Diagnoseinformationen |
-| `services.yaml` | Beschreibung der Home-Assistant-Services |
-| `manifest.json` | Integrationsmetadaten |
-
-## Architektur
-
-Die Integration nutzt die bereits vorhandene Roborock-Vacuum-Entity und deren Coordinator/API.
+Conceptually:
 
 ```text
-Vacuum Entity
-    |
-    +-- coordinator
-    |      |
-    |      +-- API
-    |
-    +-- map
-    |      +-- rooms
-    |      +-- map data
-    |
-    +-- status
-           +-- fan level
-           +-- water level
-           +-- cleaning route
+Official Roborock integration
+            |
+            v
+      Vacuum entity
+            |
+            v
+     Q10 extension
+       |    |    |
+      Maps Rooms Controls
 ```
 
-## Kartenverarbeitung
+## Main Components
 
-Beim Empfang von Kartendaten werden Raum- und Karteninformationen extrahiert und intern katalogisiert. Anschließend werden Home-Assistant-Events ausgelöst, sodass die zugehörigen Entities ihren Zustand aktualisieren können.
+The integration contains functionality for:
 
-## Raumreinigung
+- setup and config entries
+- Q10-specific entities
+- room discovery
+- map listeners
+- map catalog handling
+- room selection
+- room cleaning
+- diagnostics
+- WebSocket commands
 
-Die Raumreinigung kann mit Raum-IDs oder Raumnamen aufgerufen werden.
+## Room Data
 
-```text
-Raumname
-   |
-   v
-bekannte Q10-Räume
-   |
-   v
-Raum-ID
-   |
-   v
-Reinigungsbefehl
-```
+Room information is obtained from:
 
-Unbekannte Räume werden vor dem Senden des Befehls abgewiesen.
+`entity.coordinator.api.map.rooms`
 
-## Gerätezuordnung
+The integration can refresh the API when room data is not immediately available.
 
-Die zusätzlichen Entities werden nach ihrer Erstellung der `device_id` der bestehenden Vacuum-Entity zugeordnet. Dadurch gehören sie zum gleichen Home-Assistant-Gerät wie der Roboter.
+## Map Listeners
 
-## Abhängigkeiten
+A map update listener is registered for the Q10 vacuum.
 
-Die Q10-Integration verwendet Datenstrukturen und APIs der offiziellen Roborock-Integration beziehungsweise der installierten `roborock`-Python-Bibliothek.
+When new map data is received, the integration updates its internal map catalog and fires a Home Assistant event.
 
-Änderungen an diesen Schnittstellen können Anpassungen der Q10-Integration erforderlich machen.
+## Packet Listener
 
-## Entwicklungshinweise
+The integration can also wrap the API message handler to inspect incoming Q10-specific packets.
 
-Vor Änderungen:
+This is used to collect additional information from map-related messages.
 
-```bash
-git status
-git log -1 --oneline
-```
+## Q10 Commands
 
-Nach Änderungen:
+Some Q10-specific functions use commands not exposed directly as high-level methods by the underlying API.
 
-```bash
-git diff
-git status
-```
+For example, the cleaning route is sent through the appropriate Roborock command and Q10 DP value.
 
-Vor einem Commit sollte die Integration in Home Assistant getestet werden.
+When adding additional commands, keep the implementation isolated and document the corresponding protocol details.
 
-## Lizenz
+## Diagnostics
 
-MIT
+The diagnostic functionality is intended to inspect available Q10 information without changing the normal behavior of the vacuum.
+
+Diagnostic modes can be extended when investigating additional API fields or device commands.
+
+## Development Guidelines
+
+When modifying the integration:
+
+1. Keep the official Roborock integration as the source of the vacuum connection.
+2. Avoid duplicating functionality already provided by Home Assistant.
+3. Prefer small, isolated changes.
+4. Add debug logging for newly discovered Q10 behavior.
+5. Test changes against a real Q10 where possible.
+6. Keep user-facing documentation synchronized with implementation changes.
+
+## Potential Upstream Contribution
+
+The project may serve as a proof of concept for Q10-specific functionality that could eventually be contributed to the official Home Assistant Roborock integration or its underlying libraries.
+
+For an upstream contribution, functionality should ideally be split into focused changes rather than submitting the entire custom integration as a single replacement.

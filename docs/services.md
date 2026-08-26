@@ -1,73 +1,75 @@
 # Services
 
-## `roborock_q10.get_rooms`
+The integration provides services under the `roborock_q10` domain.
 
-Ruft die aktuellen Räume des Roboters ab.
+## Get Rooms
 
-```yaml
-service: roborock_q10.get_rooms
-data:
-  entity_id: vacuum.roborock_q10
-```
+Service:
 
-Wenn noch keine Raumdaten vorhanden sind, fordert die Integration zunächst eine aktuelle Karte an.
+`roborock_q10.get_rooms`
 
-## `roborock_q10.select_rooms`
-
-Speichert eine Auswahl von Räumen anhand ihrer Namen.
+Required data:
 
 ```yaml
-service: roborock_q10.select_rooms
-data:
-  entity_id: vacuum.roborock_q10
-  room_names:
-    - Küche
-    - Wohnzimmer
+entity_id: vacuum.your_q10
 ```
 
-## `roborock_q10.clean_rooms`
+The service registers the required map listener and refreshes the Roborock API if room information is not yet available.
 
-Startet die Reinigung bestimmter Räume.
+## Select Rooms
 
-### Über Raum-IDs
+Service:
+
+`roborock_q10.select_rooms`
+
+Example:
 
 ```yaml
-service: roborock_q10.clean_rooms
-data:
-  entity_id: vacuum.roborock_q10
-  room_ids:
-    - 3
-    - 6
+entity_id: vacuum.your_q10
+room_names:
+  - Kitchen
+  - Living Room
 ```
 
-### Über Raumnamen
+The selected room names are validated against the rooms known by the integration.
+
+## Clean Rooms
+
+Service:
+
+`roborock_q10.clean_rooms`
+
+Rooms can be specified by ID:
 
 ```yaml
-service: roborock_q10.clean_rooms
-data:
-  entity_id: vacuum.roborock_q10
-  room_names:
-    - Küche
-    - Wohnzimmer
+entity_id: vacuum.your_q10
+room_ids:
+  - 16
+  - 17
 ```
 
-Wenn weder `room_ids` noch `room_names` angegeben werden, verwendet der Service die aktuell gespeicherte Raumwahl.
-
-Die Integration prüft die angegebenen Räume gegen die bekannten Q10-Raumdaten.
-
-## `roborock_q10.diagnose`
-
-Führt eine Diagnose aus.
+Or by name:
 
 ```yaml
-service: roborock_q10.diagnose
-data:
-  entity_id: vacuum.roborock_q10
-  mode: map
+entity_id: vacuum.your_q10
+room_names:
+  - Kitchen
+  - Living Room
 ```
 
-Der aktuell vorgesehene Diagnosemodus ist `map`.
+If no room IDs or names are supplied, the integration uses the previously selected rooms.
 
-## WebSocket
+## Diagnostics
 
-Zusätzlich stellt die Integration Q10-spezifische WebSocket-Kommandos bereit, insbesondere zum Abrufen der Raumdaten und von Diagnoseinformationen. Diese Schnittstelle ist vor allem für Custom Cards und andere Frontends interessant.
+Service:
+
+`roborock_q10.diagnose`
+
+Example:
+
+```yaml
+entity_id: vacuum.your_q10
+mode: map
+```
+
+Diagnostic modes are intended primarily for development and troubleshooting.

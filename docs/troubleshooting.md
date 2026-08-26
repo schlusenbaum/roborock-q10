@@ -1,42 +1,38 @@
-# Fehlerbehebung
+# Troubleshooting
 
-## Keine Räume werden angezeigt
+## Rooms Are Not Available
 
-Prüfen, ob die offizielle Roborock-Vacuum-Entity verfügbar ist.
+Make sure the official Roborock integration is working correctly.
 
-Danach `roborock_q10.get_rooms` mit der richtigen `entity_id` ausführen. Wenn noch keine Raumdaten vorliegen, fordert die Integration eine aktuelle Karte an.
+The Q10 integration reads room information from the map data of the existing vacuum entity.
 
-## Räume werden nicht aktualisiert
+Try calling:
 
-Eine manuelle Kartenaktualisierung über **Karte aktualisieren** ausführen.
+`roborock_q10.get_rooms`
 
-Falls das Problem regelmäßig auftritt, kann die **Automatische Kartenaktualisierung** aktiviert werden.
+and check the Home Assistant logs.
 
-## Q10-Integration findet die Vacuum-Entity nicht
+## A Room Name Is Unknown
 
-Prüfen, ob die in der Q10-Konfiguration angegebene Entity tatsächlich existiert, zum Beispiel `vacuum.roborock_q10`.
+Room names are validated against the rooms currently known from the map.
 
-## Zusätzliche Entities erscheinen bei einem falschen Gerät
+Check the available room names and make sure the spelling matches exactly.
 
-Die Q10-Entities werden nach ihrer Erstellung dem Gerät der konfigurierten Vacuum-Entity zugeordnet. Nach Änderungen an der Geräte- oder Entity-Konfiguration sollte die Entity Registry geprüft werden.
+## Map Data Is Missing
 
-## Reinigung eines Raumes schlägt fehl
+The vacuum may not have received map data yet.
 
-Prüfen:
+Refreshing the Roborock API or triggering a map update can make the room information available.
 
-1. Ist die Karte aktuell?
-2. Ist der Raumname exakt so vorhanden, wie er von der Q10-Karte geliefert wird?
-3. Existiert die verwendete Raum-ID?
-4. Ist der Roboter erreichbar?
+## Check Diagnostics
 
-Bei `room_names` übersetzt die Integration die Namen anhand der aktuell bekannten Q10-Räume in Raum-IDs.
+The diagnostic service can be used during troubleshooting:
 
-## Saugleistung oder Wasserfluss lässt sich nicht ändern
+```yaml
+service: roborock_q10.diagnose
+data:
+  entity_id: vacuum.your_q10
+  mode: map
+```
 
-Prüfen, ob der Roboter erreichbar ist und ob die offizielle Roborock-Integration den aktuellen Status liefert.
-
-## Diagnose
-
-Für die Fehlersuche kann `roborock_q10.diagnose` mit dem Modus `map` verwendet werden.
-
-Zusätzlich sind Home-Assistant-Logs mit aktiviertem Debug-Logging hilfreich.
+Check the Home Assistant logs for diagnostic output.

@@ -1,38 +1,51 @@
-# Automationen
+# Automations
 
-Die zusätzlichen Services und Entities können in Home-Assistant-Automationen verwendet werden.
+The Q10 integration can be used in Home Assistant automations through its entities and services.
 
-## Räume regelmäßig reinigen
+## Clean Selected Rooms
 
-```yaml
-alias: Q10 Küche und Wohnzimmer reinigen
-trigger:
-  - platform: time
-    at: "10:00:00"
-
-action:
-  - service: roborock_q10.clean_rooms
-    data:
-      entity_id: vacuum.roborock_q10
-      room_names:
-        - Küche
-        - Wohnzimmer
-```
-
-## Raum auswählen und anschließend reinigen
+Example:
 
 ```yaml
-action:
+alias: Clean kitchen and living room
+sequence:
   - service: roborock_q10.select_rooms
+    target:
+      entity_id: vacuum.your_q10
     data:
-      entity_id: vacuum.roborock_q10
       room_names:
-        - Küche
-        - Flur
+        - Kitchen
+        - Living Room
 
   - service: roborock_q10.clean_rooms
-    data:
-      entity_id: vacuum.roborock_q10
+    target:
+      entity_id: vacuum.your_q10
 ```
 
-Entity-IDs können abhängig von der jeweiligen Home-Assistant-Konfiguration anders lauten.
+## Clean Rooms Directly
+
+Room names can also be supplied directly:
+
+```yaml
+alias: Clean kitchen
+sequence:
+  - service: roborock_q10.clean_rooms
+    target:
+      entity_id: vacuum.your_q10
+    data:
+      room_names:
+        - Kitchen
+```
+
+## Use Room IDs
+
+If stable room IDs are known, they can be used directly:
+
+```yaml
+service: roborock_q10.clean_rooms
+target:
+  entity_id: vacuum.your_q10
+data:
+  room_ids:
+    - 16
+```

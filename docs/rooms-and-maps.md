@@ -1,42 +1,37 @@
-# Räume und Karten
+# Rooms and Maps
 
-Die Q10-Integration liest die Raumdaten aus den vom Roboter gelieferten Kartendaten.
+## Reading Rooms
 
-## Raumdaten
+The integration reads room information from the map data provided by the existing Roborock vacuum entity.
 
-Für erkannte Räume stehen unter anderem Raum-ID, Raumname und der für die Kartenauswertung benötigte Pixelwert zur Verfügung.
+Each room can contain information such as:
 
-Die Raumdaten werden für die Home-Assistant-Entities und für die Raumreinigung verwendet.
+- room ID
+- room name
+- original room name
+- map-related pixel information
 
-## Kartenkatalog
+## Known Maps
 
-Die Integration führt pro Vacuum-Entity einen Katalog der empfangenen Karten.
+The integration maintains a catalog of maps received from the Roborock API.
 
-Für jede bekannte Karte werden unter anderem gespeichert:
+For each map, information such as the following can be stored:
 
-- Karten-ID
-- Breite
-- Höhe
-- Raumliste
-- Raum-ID
-- Raumname
+- map ID
+- width
+- height
+- rooms belonging to the map
 
-Die Entity **Kartenübersicht** stellt diese Informationen in Home Assistant dar.
+## Map Update Events
 
-## Kartenaktualisierung
+When new map data is received, the integration fires a map update event.
 
-Eine Karte kann über den Button **Karte aktualisieren** erneut angefordert werden.
+This allows other components, dashboards, or custom cards to react to updated room and map information.
 
-Alternativ kann die automatische Kartenaktualisierung aktiviert werden. In diesem Fall wird alle 15 Minuten eine Aktualisierung angefordert.
+## Selected Rooms
 
-## Räume aktualisieren
+Rooms can be selected by name.
 
-Der Service `roborock_q10.get_rooms` stellt sicher, dass Raumdaten vorhanden sind. Falls noch keine Räume verfügbar sind, wird eine Aktualisierung der Karte angefordert und anschließend auf die Raumdaten gewartet.
+The integration validates the requested room names against the rooms known from the current map.
 
-## Raumreinigung
-
-Für die Reinigung können Räume anhand ihres Namens oder ihrer ID angegeben werden.
-
-Bei der Verwendung von Raumnamen werden diese anhand der aktuell bekannten Q10-Raumdaten in die zugehörigen Raum-IDs übersetzt.
-
-Unbekannte Räume werden abgewiesen.
+The selected rooms can then be cleaned through the room cleaning service.
