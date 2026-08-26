@@ -1,13 +1,13 @@
 {
   "domain": "roborock_q10",
   "name": "Roborock Q10",
-  "version": "1.0.1",
-  "documentation": "https://github.com/schlusenbaum/roborock-q10",
-  "issue_tracker": "https://github.com/schlusenbaum/roborock-q10/issues",
-  "requirements": [],
-  "config_flow": true,
-  "iot_class": "cloud_push",
   "codeowners": [
     "@schlusenbaum"
-  ]
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/schlusenbaum/roborock-q10",
+  "iot_class": "cloud_push",
+  "issue_tracker": "https://github.com/schlusenbaum/roborock-q10/issues",
+  "requirements": [],
+  "version": "1.0.1"
 }
