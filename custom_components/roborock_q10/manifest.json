@@ -3,6 +3,7 @@
   "name": "Roborock Q10",
   "version": "1.0.0",
   "documentation": "https://github.com/schlusenbaum/roborock-q10",
+  "issue_tracker": "https://github.com/schlusenbaum/roborock-q10/issues",
   "requirements": [],
   "config_flow": true,
   "codeowners": [
