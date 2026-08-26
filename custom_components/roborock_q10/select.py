@@ -98,13 +98,6 @@ class RoborockQ10WaterLevelSelect(SelectEntity):
             self._vacuum_entity_id
         )
 
-    @property
-    def device_info(self):
-        return {
-            "identifiers": {
-                ("roborock", "28ZcwX5EXBeo0jly70p9oF")
-            },
-        }
 
     async def async_added_to_hass(self):
         await super().async_added_to_hass()
@@ -179,14 +172,6 @@ class RoborockQ10RoomSelect(SelectEntity):
         return self.hass.data[DATA_COMPONENT].get_entity(
             self._vacuum_entity_id
         )
-
-    @property
-    def device_info(self):
-        return {
-            "identifiers": {
-                ("roborock", self._vacuum_entity_id)
-            },
-        }
 
     async def async_added_to_hass(self):
         await super().async_added_to_hass()
