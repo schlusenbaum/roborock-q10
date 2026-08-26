@@ -1,5 +1,6 @@
 from homeassistant import config_entries
 from homeassistant.components.vacuum import DATA_COMPONENT
+from homeassistant.components.roborock.vacuum import RoborockQ10Vacuum
 from homeassistant.core import callback
 import voluptuous as vol
 from . import DOMAIN
@@ -15,9 +16,10 @@ class RoborockQ10ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         entities = []
         if component is not None:
             for entity in component.entities:
-                entity_id = getattr(entity, "entity_id", None)
-                if entity_id and entity_id.startswith("vacuum."):
-                    entities.append(entity_id)
+                if isinstance(entity, RoborockQ10Vacuum):
+                    entity_id = getattr(entity, "entity_id", None)
+                    if entity_id:
+                        entities.append(entity_id)
 
         entities.sort()
 
