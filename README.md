@@ -29,28 +29,30 @@ This integration extends Home Assistant's official Roborock integration with Q10
 
 ## Documentation
 
+## Documentation
+
 ### English
 
-- [Installation](docs/installation.md)
-- [Configuration](docs/configuration.md)
-- [Entities](docs/entities.md)
-- [Rooms and Maps](docs/rooms-and-maps.md)
-- [Services](docs/services.md)
-- [Automations](docs/automations.md)
-- [Troubleshooting](docs/troubleshooting.md)
-- [Development](docs/development.md)
+- **[Installation](https://github.com/schlusenbaum/roborock-q10/blob/main/docs/installation.md)**
+- **[Configuration](https://github.com/schlusenbaum/roborock-q10/blob/main/docs/configuration.md)**
+- **[Entities](https://github.com/schlusenbaum/roborock-q10/blob/main/docs/entities.md)**
+- **[Rooms and Maps](https://github.com/schlusenbaum/roborock-q10/blob/main/docs/rooms-and-maps.md)**
+- **[Services](https://github.com/schlusenbaum/roborock-q10/blob/main/docs/services.md)**
+- **[Automations](https://github.com/schlusenbaum/roborock-q10/blob/main/docs/automations.md)**
+- **[Troubleshooting](https://github.com/schlusenbaum/roborock-q10/blob/main/docs/troubleshooting.md)**
+- **[Development](https://github.com/schlusenbaum/roborock-q10/blob/main/docs/development.md)**
 
 ### Deutsch
-🇩🇪 [Deutsche Dokumentation](docs/de/README.md)
 
-- [Installation](docs/de/installation.md)
-- [Konfiguration](docs/de/configuration.md)
-- [Entities](docs/de/entities.md)
-- [Räume und Karten](docs/de/rooms-and-maps.md)
-- [Services](docs/de/services.md)
-- [Automationen](docs/de/automations.md)
-- [Fehlerbehebung](docs/de/troubleshooting.md)
-- [Entwicklung](docs/de/development.md)
+- **[Deutsche Dokumentation](https://github.com/schlusenbaum/roborock-q10/blob/main/docs/de/README.md)**
+- **[Installation](https://github.com/schlusenbaum/roborock-q10/blob/main/docs/de/installation.md)**
+- **[Konfiguration](https://github.com/schlusenbaum/roborock-q10/blob/main/docs/de/configuration.md)**
+- **[Entities](https://github.com/schlusenbaum/roborock-q10/blob/main/docs/de/entities.md)**
+- **[Räume und Karten](https://github.com/schlusenbaum/roborock-q10/blob/main/docs/de/rooms-and-maps.md)**
+- **[Services](https://github.com/schlusenbaum/roborock-q10/blob/main/docs/de/services.md)**
+- **[Automationen](https://github.com/schlusenbaum/roborock-q10/blob/main/docs/de/automations.md)**
+- **[Fehlerbehebung](https://github.com/schlusenbaum/roborock-q10/blob/main/docs/de/troubleshooting.md)**
+- **[Entwicklung](https://github.com/schlusenbaum/roborock-q10/blob/main/docs/de/development.md)**
 
 ## Technical Overview
 

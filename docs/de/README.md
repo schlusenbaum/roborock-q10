@@ -29,16 +29,20 @@ Die Integration erweitert die offizielle Home-Assistant-Roborock-Integration um 
 
 ## Dokumentation
 
-- [Installation](docs/installation.md)
-- [Konfiguration](docs/configuration.md)
-- [Entities](docs/entities.md)
-- [Räume und Karten](docs/rooms-and-maps.md)
-- [Services](docs/services.md)
-- [Automationen](docs/automations.md)
-- [Fehlerbehebung](docs/troubleshooting.md)
-- [Entwicklung](docs/development.md)
+### Deutsch
 
-🇬🇧 [English documentation](../../README.md)
+- **[Installation](https://github.com/schlusenbaum/roborock-q10/blob/main/docs/de/installation.md)**
+- **[Konfiguration](https://github.com/schlusenbaum/roborock-q10/blob/main/docs/de/configuration.md)**
+- **[Entities](https://github.com/schlusenbaum/roborock-q10/blob/main/docs/de/entities.md)**
+- **[Räume und Karten](https://github.com/schlusenbaum/roborock-q10/blob/main/docs/de/rooms-and-maps.md)**
+- **[Services](https://github.com/schlusenbaum/roborock-q10/blob/main/docs/de/services.md)**
+- **[Automationen](https://github.com/schlusenbaum/roborock-q10/blob/main/docs/de/automations.md)**
+- **[Fehlerbehebung](https://github.com/schlusenbaum/roborock-q10/blob/main/docs/de/troubleshooting.md)**
+- **[Entwicklung](https://github.com/schlusenbaum/roborock-q10/blob/main/docs/de/development.md)**
+
+### English
+
+**[English documentation](https://github.com/schlusenbaum/roborock-q10/blob/main/README.md)**
 
 ## Technischer Überblick
 
