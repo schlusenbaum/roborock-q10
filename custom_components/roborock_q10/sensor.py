@@ -23,14 +23,14 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
 class RoborockQ10RoomsSensor(SensorEntity):
     _attr_has_entity_name = True
-    _attr_name = "Räume"
     _attr_icon = "mdi:floor-plan"
 
     def __init__(self, hass, vacuum_entity_id):
         self.hass = hass
         self._vacuum_entity_id = vacuum_entity_id
         object_id = vacuum_entity_id.split(".", 1)[1]
-        self.entity_id = f"sensor.{object_id}_raeume"
+        self.entity_id = f"sensor.{object_id}_rooms"
+        self._attr_translation_key = "rooms"
         self._attr_unique_id = f"{vacuum_entity_id}_rooms"
 
     @property
@@ -79,14 +79,14 @@ class RoborockQ10MapCatalogSensor(SensorEntity):
     """Display known Q10 maps and their rooms."""
 
     _attr_has_entity_name = True
-    _attr_name = "Kartenübersicht"
     _attr_icon = "mdi:map-legend"
 
     def __init__(self, hass, vacuum_entity_id):
         self.hass = hass
         self._vacuum_entity_id = vacuum_entity_id
         object_id = vacuum_entity_id.split(".", 1)[1]
-        self.entity_id = f"sensor.{object_id}_kartenuebersicht"
+        self.entity_id = f"sensor.{object_id}_map_catalog"
+        self._attr_translation_key = "map_catalog"
         self._attr_unique_id = f"{vacuum_entity_id}_map_catalog"
 
     @property
@@ -155,7 +155,6 @@ class RoborockQ10SelectedRoomsSensor(SensorEntity):
     """Show selected Q10 cleaning rooms."""
 
     _attr_has_entity_name = True
-    _attr_name = "Ausgewählte Räume"
     _attr_icon = "mdi:format-list-checks"
 
     def __init__(self, hass, vacuum_entity_id):
@@ -163,7 +162,8 @@ class RoborockQ10SelectedRoomsSensor(SensorEntity):
         self._vacuum_entity_id = vacuum_entity_id
 
         object_id = vacuum_entity_id.split(".", 1)[1]
-        self.entity_id = f"sensor.{object_id}_ausgewaehlte_raeume"
+        self.entity_id = f"sensor.{object_id}_selected_rooms"
+        self._attr_translation_key = "selected_rooms"
         self._attr_unique_id = f"{vacuum_entity_id}_selected_rooms"
 
     @property

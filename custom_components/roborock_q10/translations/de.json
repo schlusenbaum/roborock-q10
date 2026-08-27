@@ -1,0 +1,45 @@
+{
+  "title": "Roborock Q10",
+  "entity": {
+    "sensor": {
+      "map_catalog": {
+        "name": "Kartenübersicht"
+      },
+      "rooms": {
+        "name": "Räume"
+      },
+      "selected_rooms": {
+        "name": "Ausgewählte Räume"
+      }
+    },
+    "select": {
+      "water_level": {
+        "name": "Wasserfluss",
+        "state": {
+          "off": "Aus",
+          "low": "Niedrig",
+          "medium": "Mittel",
+          "high": "Hoch"
+        }
+      },
+      "fan_level": {
+        "name": "Saugleistung",
+        "state": {
+          "quiet": "Leise",
+          "balanced": "Normal",
+          "turbo": "Turbo",
+          "max": "Max",
+          "max_plus": "Max+"
+        }
+      },
+      "clean_line": {
+        "name": "Reinigungsroute",
+        "state": {
+          "daily": "Leicht",
+          "fast": "Mittel",
+          "fine": "Intensiv"
+        }
+      }
+    }
+  }
+}

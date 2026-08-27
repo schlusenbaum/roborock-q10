@@ -18,10 +18,10 @@ from roborock.data.b01_q10.b01_q10_code_mappings import (
 
 
 WATER_LEVELS = {
-    "Aus": YXWaterLevel.OFF,
-    "Niedrig": YXWaterLevel.LOW,
-    "Mittel": YXWaterLevel.MEDIUM,
-    "Hoch": YXWaterLevel.HIGH,
+    "off": YXWaterLevel.OFF,
+    "low": YXWaterLevel.LOW,
+    "medium": YXWaterLevel.MEDIUM,
+    "high": YXWaterLevel.HIGH,
 }
 
 
@@ -34,9 +34,9 @@ FAN_LEVELS = {
 }
 
 CLEAN_LINES = {
-    "Leicht": YXCleanLine.DAILY,
-    "Mittel": YXCleanLine.FAST,
-    "Intensiv": YXCleanLine.FINE,
+    "daily": YXCleanLine.DAILY,
+    "fast": YXCleanLine.FAST,
+    "fine": YXCleanLine.FINE,
 }
 
 
@@ -78,7 +78,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
 class RoborockQ10WaterLevelSelect(SelectEntity):
 
     _attr_entity_category = EntityCategory.CONFIG
-    _attr_name = "Wasserfluss"
+    _attr_has_entity_name = True
+    _attr_translation_key = "water_level"
     _attr_icon = "mdi:water"
     _attr_options = list(WATER_LEVELS)
 
@@ -157,7 +158,8 @@ class RoborockQ10WaterLevelSelect(SelectEntity):
 class RoborockQ10RoomSelect(SelectEntity):
     """Select a Q10 room for cleaning."""
 
-    _attr_name = "Reinigungsraum"
+    _attr_has_entity_name = True
+    _attr_translation_key = "clean_room"
     _attr_icon = "mdi:floor-plan"
 
     def __init__(self, hass, vacuum_entity_id, config_entry_id):
@@ -237,7 +239,8 @@ class RoborockQ10FanLevelSelect(SelectEntity):
     """Select Q10 vacuum power."""
 
     _attr_entity_category = EntityCategory.CONFIG
-    _attr_name = "Saugleistung"
+    _attr_has_entity_name = True
+    _attr_translation_key = "fan_level"
     _attr_icon = "mdi:fan"
 
     def __init__(self, hass, vacuum_entity_id, config_entry_id):
@@ -298,7 +301,8 @@ class RoborockQ10CleanLineSelect(SelectEntity):
     """Select Q10 cleaning route."""
 
     _attr_entity_category = EntityCategory.CONFIG
-    _attr_name = "Reinigungsroute"
+    _attr_has_entity_name = True
+    _attr_translation_key = "clean_line"
     _attr_icon = "mdi:route"
 
     def __init__(self, hass, vacuum_entity_id, config_entry_id):
