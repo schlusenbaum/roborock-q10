@@ -63,22 +63,10 @@ def _register_q10_packet_listener(hass, entity):
                 ],
             }
 
-            catalog = hass.data.setdefault(DOMAIN, {}).setdefault(
-                "map_catalog", {}
-            ).setdefault(entity_id, {})
-
-            catalog[str(message.map_id)] = {
-                "map_id": message.map_id,
-                "width": message.width,
-                "height": message.height,
-                "rooms": [
-                    {
-                        "id": room.id,
-                        "name": room.name,
-                    }
-                    for room in message.rooms
-                ],
-            }
+            _LOGGER.debug(
+                "Q10 MAP EVENT FIRE: %s",
+                entity_id,
+            )
 
             hass.bus.async_fire(
                 EVENT_MAP_UPDATED,
@@ -171,12 +159,23 @@ def _register_map_listener(hass, entity):
         last_fire = now
 
         image_content = entity.coordinator.api.map.image_content
+        _LOGGER.debug(
+            "Q10 MAP IMAGE CONTENT: %s bytes",
+            len(image_content) if image_content is not None else None,
+        )
 
         if image_content is not None:
             hass.data.setdefault(DOMAIN, {}).setdefault("maps", {})[
                 entity_id
             ] = image_content
 
+            hass.bus.async_fire(
+                EVENT_MAP_UPDATED,
+                {"entity_id": entity_id},
+            )
+
+        map_packet = getattr(entity.coordinator.api.map, "_map_packet", None)
+        map_id = getattr(map_packet, "map_id", None)
         rooms = entity.coordinator.api.map.rooms or []
         _LOGGER.debug(
             "Q10 MAP UPDATE ROOMS: %s",
@@ -189,6 +188,7 @@ def _register_map_listener(hass, entity):
             {
                 "id": room.id,
                 "name": room.name,
+                "map_id": map_id,
                 "pixel_value": room.pixel_value,
                 "pixel_count": room.pixel_count,
             }
@@ -528,7 +528,7 @@ async def async_setup_entry(hass, entry):
 
     await hass.config_entries.async_forward_entry_setups(
         entry,
-        ["switch", "sensor", "select", "button"],
+        ["switch", "sensor", "select", "button", "image"],
     )
 
     for _ in range(25):

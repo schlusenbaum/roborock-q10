@@ -2,10 +2,7 @@
   "title": "Roborock Q10",
   "entity": {
     "sensor": {
-      "map_catalog": {
-        "name": "Map Overview"
-      },
-      "rooms": {
+            "rooms": {
         "name": "Rooms"
       },
       "selected_rooms": {
@@ -13,6 +10,9 @@
       }
     },
     "select": {
+      "clean_room": {
+        "name": "Cleaning Room"
+      },
       "water_level": {
         "name": "Water Flow",
         "state": {
