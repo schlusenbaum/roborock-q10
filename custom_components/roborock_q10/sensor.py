@@ -1,11 +1,14 @@
 """Sensor platform for the Roborock Q10 map catalog."""
 
+import logging
+
+_LOGGER = logging.getLogger(__name__)
+
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.components.vacuum import DATA_COMPONENT
 from homeassistant.core import callback
 
 from . import DOMAIN, EVENT_MAP_UPDATED
-
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up the Q10 map catalog sensor."""
