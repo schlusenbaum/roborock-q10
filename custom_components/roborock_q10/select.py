@@ -226,12 +226,6 @@ class RoborockQ10RoomSelect(SelectEntity):
             "selected_rooms", {}
         )[self._vacuum_entity_id] = self._attr_current_option
 
-        _LOGGER.debug(
-            "Q10 SELECTED ROOM: %s -> %s",
-            self._vacuum_entity_id,
-            self._attr_current_option,
-        )
-
         self.async_write_ha_state()
 
 

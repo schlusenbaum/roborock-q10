@@ -356,14 +356,20 @@ async def handle_clean_rooms(hass, call):
             .get(entity_id, [])
         )
 
-        _LOGGER.debug(
-            "Q10 CLEAN SELECTED ROOMS: %s -> %s",
-            entity_id,
-            selected_rooms,
-        )
-
         if selected_rooms:
-            room_names = selected_rooms
+            if isinstance(selected_rooms, str):
+                room_names = [selected_rooms]
+            else:
+                room_names = list(selected_rooms)
+        else:
+            rooms = entity.coordinator.api.map.rooms or []
+
+            if not rooms:
+                raise ValueError(
+                    "Q10 rooms are not available yet. Please try again."
+                )
+
+            room_ids = [room.id for room in rooms]
 
     if room_names:
         rooms = entity.coordinator.api.map.rooms or []
@@ -407,6 +413,11 @@ async def handle_select_rooms(hass, call):
     entity_id = call.data["entity_id"]
     room_names = call.data.get("room_names", [])
 
+    if isinstance(room_names, str):
+        room_names = [room_names]
+    else:
+        room_names = list(room_names)
+
     entity = hass.data[DATA_COMPONENT].get_entity(entity_id)
 
     if entity is None:
@@ -436,13 +447,6 @@ async def handle_select_rooms(hass, call):
             "entity_id": entity_id,
         },
     )
-
-    _LOGGER.debug(
-        "Q10 SELECTED ROOMS: %s -> %s",
-        entity_id,
-        room_names,
-    )
-
 
 async def async_setup(hass: HomeAssistant, config) -> bool:
     """Set up the Roborock Q10 helper."""
@@ -495,7 +499,6 @@ async def async_setup(hass: HomeAssistant, config) -> bool:
     )
 
     async def clean_rooms_service(call):
-        _LOGGER.debug("Q10 SERVICE CALLBACK ERREICHT: %s", call.data)
         await handle_clean_rooms(hass, call)
 
     hass.services.async_register(

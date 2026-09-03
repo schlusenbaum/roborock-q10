@@ -108,11 +108,16 @@ class RoborockQ10SelectedRoomsSensor(SensorEntity):
         }
 
     def _rooms(self):
-        return (
+        rooms = (
             self.hass.data.get(DOMAIN, {})
             .get("selected_rooms", {})
             .get(self._vacuum_entity_id, [])
         )
+
+        if isinstance(rooms, str):
+            return [rooms]
+
+        return list(rooms)
 
     async def async_added_to_hass(self):
         await super().async_added_to_hass()
