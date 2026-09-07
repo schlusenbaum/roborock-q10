@@ -48,6 +48,15 @@
       },
       "map_mirror_vertical": {
         "name": "Karte vertikal spiegeln"
+      },
+      "clean_mode": {
+        "name": "Reinigungsmodus",
+        "state": {
+          "vac_and_mop": "Saugen & Wischen",
+          "vacuum": "Nur Saugen",
+          "mop": "Nur Wischen",
+          "vacuum_then_mop": "Erst saugen, dann wischen"
+        }
       }
     }
   }

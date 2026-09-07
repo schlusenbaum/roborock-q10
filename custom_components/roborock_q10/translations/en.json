@@ -48,6 +48,15 @@
       },
       "map_mirror_vertical": {
         "name": "Mirror Map Vertically"
+      },
+      "clean_mode": {
+        "name": "Cleaning Mode",
+        "state": {
+          "vac_and_mop": "Vacuum & Mop",
+          "vacuum": "Vacuum Only",
+          "mop": "Mop Only",
+          "vacuum_then_mop": "Vacuum, Then Mop"
+        }
       }
     }
   }

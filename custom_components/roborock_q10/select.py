@@ -39,6 +39,14 @@ CLEAN_LINES = {
     "fine": YXCleanLine.FINE,
 }
 
+CLEAN_MODES = {
+    "vac_and_mop": 1,
+    "vacuum": 2,
+    "mop": 3,
+    "customized": 4,
+    "vacuum_then_mop": 6,
+}
+
 
 async def async_setup_entry(hass, entry, async_add_entities):
     _LOGGER.debug("Q10 SELECT SETUP ENTRY")
@@ -57,6 +65,11 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 entry.entry_id,
             ),
             RoborockQ10RoomSelect(
+                hass,
+                entity_id,
+                entry.entry_id,
+            ),
+            RoborockQ10CleanModeSelect(
                 hass,
                 entity_id,
                 entry.entry_id,
@@ -153,7 +166,6 @@ class RoborockQ10WaterLevelSelect(SelectEntity):
             params=level.code,
         )
 
-        await self._vacuum.coordinator.api.refresh()
         self.async_write_ha_state()
 
 
@@ -232,6 +244,113 @@ class RoborockQ10RoomSelect(SelectEntity):
         self.async_write_ha_state()
 
 
+class _Q10CleanModeRawListener:
+    def __init__(self, callback):
+        self._callback = callback
+
+    def update_from_dps(self, dps):
+        mode = dps.get(B01_Q10_DP.CLEAN_MODE)
+        if mode is None:
+            mode = dps.get(B01_Q10_DP.CLEAN_MODE.code)
+        if mode is not None:
+            self._callback(mode)
+
+
+class RoborockQ10CleanModeSelect(SelectEntity):
+    """Select Q10 cleaning mode."""
+
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_has_entity_name = True
+    _attr_translation_key = "clean_mode"
+    _attr_icon = "mdi:robot-vacuum"
+    _attr_options = list(CLEAN_MODES)
+
+    def __init__(self, hass, vacuum_entity_id, config_entry_id):
+        self.hass = hass
+        self._vacuum_entity_id = vacuum_entity_id
+        self._config_entry_id = config_entry_id
+        self._attr_unique_id = f"{vacuum_entity_id}_clean_mode"
+        self._raw_clean_mode = None
+        self._raw_clean_mode_listener = None
+
+    @property
+    def _vacuum(self):
+        return self.hass.data[DATA_COMPONENT].get_entity(
+            self._vacuum_entity_id
+        )
+
+    async def async_added_to_hass(self):
+        await super().async_added_to_hass()
+
+        from homeassistant.helpers import entity_registry as er
+
+        registry = er.async_get(self.hass)
+        vacuum_entry = registry.async_get(self._vacuum_entity_id)
+
+        if vacuum_entry and vacuum_entry.device_id:
+            registry.async_update_entity(
+                self.entity_id,
+                device_id=vacuum_entry.device_id,
+            )
+
+        vacuum = self._vacuum
+        if vacuum is not None:
+            self.async_on_remove(
+                vacuum.coordinator.api.status.add_update_listener(
+                    self.async_write_ha_state
+                )
+            )
+            api = vacuum.coordinator.api
+            self._raw_clean_mode_listener = _Q10CleanModeRawListener(
+                self._handle_raw_clean_mode
+            )
+            api._updatable_traits.append(self._raw_clean_mode_listener)
+            self.async_on_remove(self._remove_raw_clean_mode_listener)
+
+    def _handle_raw_clean_mode(self, mode):
+        if mode in CLEAN_MODES.values():
+            _LOGGER.debug("Q10 SELECT: raw CLEAN_MODE=%r", mode)
+            self._raw_clean_mode = mode
+            self.async_write_ha_state()
+
+    def _remove_raw_clean_mode_listener(self):
+        vacuum = self._vacuum
+        listener = self._raw_clean_mode_listener
+        if vacuum is not None and listener is not None:
+            traits = getattr(vacuum.coordinator.api, "_updatable_traits", [])
+            if listener in traits:
+                traits.remove(listener)
+        self._raw_clean_mode_listener = None
+
+    @property
+    def current_option(self):
+        vacuum = self._vacuum
+
+        if vacuum is None:
+            return None
+
+        mode = self._raw_clean_mode
+        if mode is None:
+            mode = vacuum.coordinator.api.status.clean_mode
+        _LOGGER.debug("Q10 SELECT: clean_mode=%r type=%s", mode, type(mode))
+
+        for name, mapped_mode in CLEAN_MODES.items():
+            if mapped_mode == mode:
+                return name
+
+        return None
+
+    async def async_select_option(self, option):
+        mode = CLEAN_MODES[option]
+
+        await self._vacuum.coordinator.api.command.send(
+            B01_Q10_DP.CLEAN_MODE,
+            params=mode,
+        )
+
+        self.async_write_ha_state()
+
+
 class RoborockQ10FanLevelSelect(SelectEntity):
     """Select Q10 vacuum power."""
 
@@ -290,7 +409,6 @@ class RoborockQ10FanLevelSelect(SelectEntity):
         await self._vacuum.coordinator.api.vacuum.set_fan_level(
             FAN_LEVELS[option]
         )
-        await self._vacuum.coordinator.api.refresh()
         self.async_write_ha_state()
 
 
@@ -345,7 +463,6 @@ class RoborockQ10CleanLineSelect(SelectEntity):
             B01_Q10_DP.COMMON,
             params={"78": CLEAN_LINES[option].code},
         )
-        await self._vacuum.coordinator.api.refresh()
         self.async_write_ha_state()
 
 
