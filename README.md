@@ -2,7 +2,7 @@
 
 Home Assistant custom integration for Roborock Q10 devices.
 
-This integration extends Home Assistant's official Roborock integration with Q10-specific functionality for maps, rooms, and cleaning controls.
+This integration extends Home Assistant's official Roborock integration with Q10-specific functionality for maps, rooms, cleaning controls, and map orientation.
 
 > **Important:** This integration does not replace the official Home Assistant Roborock integration. It uses an existing Roborock vacuum entity and adds additional entities and services.
 
@@ -11,6 +11,9 @@ This integration extends Home Assistant's official Roborock integration with Q10
 - Read rooms directly from the Q10 map
 - Provide room IDs and room names
 - Catalog known Q10 maps
+- Display the Q10 map as a Home Assistant image entity
+- Configure map rotation (0°, 90°, 180°, 270°)
+- Configure horizontal and vertical map mirroring
 - Refresh the map manually
 - Automatically refresh map information every 15 minutes
 - Select rooms for cleaning
@@ -26,8 +29,6 @@ This integration extends Home Assistant's official Roborock integration with Q10
 - Home Assistant
 - The official Home Assistant Roborock integration
 - A Roborock Q10 configured through the official integration
-
-## Documentation
 
 ## Documentation
 
@@ -59,3 +60,7 @@ This integration extends Home Assistant's official Roborock integration with Q10
 The integration builds on the vacuum entity provided by Home Assistant's official Roborock integration.
 
 It adds Q10-specific functionality without replacing or duplicating the existing Roborock integration.
+
+Map orientation is configurable per installation because the correct orientation may differ between Q10 variants or individual installations.
+
+The integration currently provides independent controls for rotation, horizontal mirroring, and vertical mirroring. These settings are applied directly to the generated map image.
