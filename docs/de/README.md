@@ -52,7 +52,6 @@ Die Integration erweitert die offizielle Home-Assistant-Roborock-Integration um 
 
 Die Q10-Integration greift auf die bestehende Vacuum-Entity, deren Coordinator und API der offiziellen Roborock-Integration zu. Sie baut keine zweite Roborock-Verbindung und kein zweites physisches Gerät auf.
 
-```text
 Roborock Q10
     |
     v
@@ -69,3 +68,8 @@ Roborock Q10 Custom Integration
     +-- Reinigung
     +-- Q10-Einstellungen
     +-- Diagnose
+
+Die Kartenausrichtung kann für jede Installation individuell angepasst werden, da sich die erforderliche Ausrichtung je nach Q10-Variante oder Installation unterscheiden kann.
+Dafür stehen unabhängige Einstellungen für Drehung, horizontales Spiegeln und vertikales Spiegeln zur Verfügung. Die Einstellungen werden direkt auf die erzeugte Kartenansicht angewendet.
+Lizenz
+MIT
