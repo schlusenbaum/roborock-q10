@@ -2,7 +2,7 @@
 
 Home-Assistant-Custom-Integration für Roborock-Q10-Geräte.
 
-Die Integration erweitert die offizielle Home-Assistant-Roborock-Integration um Q10-spezifische Funktionen für Karten, Räume und Reinigung.
+Die Integration erweitert die offizielle Home-Assistant-Roborock-Integration um Q10-spezifische Funktionen für Karten, Räume, Reinigung und Kartenausrichtung.
 
 > **Wichtig:** Die Integration ersetzt die offizielle Roborock-Integration nicht. Sie verwendet die bereits vorhandene Roborock-Vacuum-Entity und ergänzt sie um zusätzliche Entities und Dienste.
 
@@ -11,8 +11,12 @@ Die Integration erweitert die offizielle Home-Assistant-Roborock-Integration um 
 - Räume direkt aus der Q10-Karte auslesen
 - Raum-IDs und Raumnamen bereitstellen
 - bekannte Q10-Karten katalogisieren
+- die Q10-Karte als Home-Assistant-Bild-Entity bereitstellen
+- Kartendrehung auf 0°, 90°, 180° oder 270° einstellen
+- Karte horizontal spiegeln
+- Karte vertikal spiegeln
 - Karte manuell aktualisieren
-- Kartenaktualisierung automatisch alle 15 Minuten ausführen
+- Karteninformationen automatisch alle 15 Minuten aktualisieren
 - Reinigungsraum auswählen
 - ausgewählte Räume reinigen
 - Räume per ID oder Name über Services reinigen
@@ -60,12 +64,8 @@ Vacuum-Entity / Coordinator / API
     v
 Roborock Q10 Custom Integration
     +-- Karten
+    +-- Kartenausrichtung
     +-- Räume
     +-- Reinigung
     +-- Q10-Einstellungen
     +-- Diagnose
-```
-
-## Lizenz
-
-MIT
