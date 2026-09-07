@@ -94,12 +94,48 @@ class RoborockQ10MirroredMapImage(ImageEntity):
             len(image_content),
         )
 
+        entry = self.hass.config_entries.async_entries(DOMAIN)
+        entry = next(
+            (
+                config_entry
+                for config_entry in entry
+                if config_entry.data.get("entity_id") == self._vacuum_entity_id
+            ),
+            None,
+        )
+
+        rotation = 180
+        mirror_horizontal = False
+        mirror_vertical = False
+
+        if entry:
+            rotation = int(entry.options.get("map_rotation", 180))
+            mirror_horizontal = entry.options.get(
+                "map_mirror_horizontal", False
+            )
+            mirror_vertical = entry.options.get(
+                "map_mirror_vertical", False
+            )
+
         with Image.open(BytesIO(image_content)) as image:
-            mirrored = image.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
-            mirrored = mirrored.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
+            if rotation:
+                image = image.rotate(
+                    rotation,
+                    expand=True,
+                )
+
+            if mirror_horizontal:
+                image = image.transpose(
+                    Image.Transpose.FLIP_LEFT_RIGHT
+                )
+
+            if mirror_vertical:
+                image = image.transpose(
+                    Image.Transpose.FLIP_TOP_BOTTOM
+                )
 
             output = BytesIO()
-            mirrored.save(output, format="PNG")
+            image.save(output, format="PNG")
 
             self._cached_image = output.getvalue()
 

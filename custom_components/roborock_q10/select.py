@@ -71,6 +71,9 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 entity_id,
                 entry.entry_id,
             ),
+            RoborockQ10MapRotationSelect(hass, entity_id, entry.entry_id),
+            RoborockQ10MapMirrorHorizontalSelect(hass, entity_id, entry.entry_id),
+            RoborockQ10MapMirrorVerticalSelect(hass, entity_id, entry.entry_id),
         ]
     )
 
@@ -344,3 +347,132 @@ class RoborockQ10CleanLineSelect(SelectEntity):
         )
         await self._vacuum.coordinator.api.refresh()
         self.async_write_ha_state()
+
+
+class RoborockQ10MapRotationSelect(SelectEntity):
+    async def async_added_to_hass(self):
+        await super().async_added_to_hass()
+
+        from homeassistant.helpers import entity_registry as er
+
+        registry = er.async_get(self.hass)
+        vacuum_entry = registry.async_get(self._vacuum_entity_id)
+
+        if vacuum_entry and vacuum_entry.device_id:
+            registry.async_update_entity(
+                self.entity_id,
+                device_id=vacuum_entry.device_id,
+            )
+
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_has_entity_name = True
+    _attr_translation_key = "map_rotation"
+    _attr_icon = "mdi:rotate-right"
+
+    @property
+    def options(self):
+        return ["0", "90", "180", "270"]
+
+    def __init__(self, hass, vacuum_entity_id, config_entry_id):
+        self.hass = hass
+        self._vacuum_entity_id = vacuum_entity_id
+        self._config_entry_id = config_entry_id
+        self._attr_unique_id = f"{vacuum_entity_id}_map_rotation"
+
+    @property
+    def current_option(self):
+        entry = self.hass.config_entries.async_get_entry(self._config_entry_id)
+        return str(entry.options.get("map_rotation", 180)) if entry else "180"
+
+    async def async_select_option(self, option):
+        entry = self.hass.config_entries.async_get_entry(self._config_entry_id)
+        if entry:
+            self.hass.config_entries.async_update_entry(entry, options={**entry.options, "map_rotation": int(option)})
+            self.hass.bus.async_fire(EVENT_MAP_UPDATED, {"entity_id": self._vacuum_entity_id})
+            self.async_write_ha_state()
+
+
+class RoborockQ10MapMirrorHorizontalSelect(SelectEntity):
+    async def async_added_to_hass(self):
+        await super().async_added_to_hass()
+
+        from homeassistant.helpers import entity_registry as er
+
+        registry = er.async_get(self.hass)
+        vacuum_entry = registry.async_get(self._vacuum_entity_id)
+
+        if vacuum_entry and vacuum_entry.device_id:
+            registry.async_update_entity(
+                self.entity_id,
+                device_id=vacuum_entry.device_id,
+            )
+
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_has_entity_name = True
+    _attr_translation_key = "map_mirror_horizontal"
+    _attr_icon = "mdi:flip-horizontal"
+
+    @property
+    def options(self):
+        return ["off", "on"]
+
+    def __init__(self, hass, vacuum_entity_id, config_entry_id):
+        self.hass = hass
+        self._vacuum_entity_id = vacuum_entity_id
+        self._config_entry_id = config_entry_id
+        self._attr_unique_id = f"{vacuum_entity_id}_map_mirror_horizontal"
+
+    @property
+    def current_option(self):
+        entry = self.hass.config_entries.async_get_entry(self._config_entry_id)
+        return "on" if entry and entry.options.get("map_mirror_horizontal", False) else "off"
+
+    async def async_select_option(self, option):
+        entry = self.hass.config_entries.async_get_entry(self._config_entry_id)
+        if entry:
+            self.hass.config_entries.async_update_entry(entry, options={**entry.options, "map_mirror_horizontal": option == "on"})
+            self.hass.bus.async_fire(EVENT_MAP_UPDATED, {"entity_id": self._vacuum_entity_id})
+            self.async_write_ha_state()
+
+
+class RoborockQ10MapMirrorVerticalSelect(SelectEntity):
+    async def async_added_to_hass(self):
+        await super().async_added_to_hass()
+
+        from homeassistant.helpers import entity_registry as er
+
+        registry = er.async_get(self.hass)
+        vacuum_entry = registry.async_get(self._vacuum_entity_id)
+
+        if vacuum_entry and vacuum_entry.device_id:
+            registry.async_update_entity(
+                self.entity_id,
+                device_id=vacuum_entry.device_id,
+            )
+
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_has_entity_name = True
+    _attr_translation_key = "map_mirror_vertical"
+    _attr_icon = "mdi:flip-vertical"
+
+    @property
+    def options(self):
+        return ["off", "on"]
+
+    def __init__(self, hass, vacuum_entity_id, config_entry_id):
+        self.hass = hass
+        self._vacuum_entity_id = vacuum_entity_id
+        self._config_entry_id = config_entry_id
+        self._attr_unique_id = f"{vacuum_entity_id}_map_mirror_vertical"
+
+    @property
+    def current_option(self):
+        entry = self.hass.config_entries.async_get_entry(self._config_entry_id)
+        return "on" if entry and entry.options.get("map_mirror_vertical", False) else "off"
+
+    async def async_select_option(self, option):
+        entry = self.hass.config_entries.async_get_entry(self._config_entry_id)
+        if entry:
+            self.hass.config_entries.async_update_entry(entry, options={**entry.options, "map_mirror_vertical": option == "on"})
+            self.hass.bus.async_fire(EVENT_MAP_UPDATED, {"entity_id": self._vacuum_entity_id})
+            self.async_write_ha_state()

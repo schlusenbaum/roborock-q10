@@ -2,7 +2,7 @@
   "title": "Roborock Q10",
   "entity": {
     "sensor": {
-            "rooms": {
+      "rooms": {
         "name": "Räume"
       },
       "selected_rooms": {
@@ -39,6 +39,15 @@
           "fast": "Mittel",
           "fine": "Intensiv"
         }
+      },
+      "map_rotation": {
+        "name": "Kartendrehung"
+      },
+      "map_mirror_horizontal": {
+        "name": "Karte horizontal spiegeln"
+      },
+      "map_mirror_vertical": {
+        "name": "Karte vertikal spiegeln"
       }
     }
   }
