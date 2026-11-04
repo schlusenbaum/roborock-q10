@@ -46,7 +46,37 @@ def legacy_request_enabled(hass: Any, vacuum_entity_id: str) -> bool:
     )
 
 
-async def request_map_legacy(api: Any) -> bool:
+MAP_ID_STORE_KEY = "roborock_q10.map_ids"
+
+
+def known_map_id(hass: Any, vacuum_entity_id: str) -> str | None:
+    """Last map id seen for this robot, kept across restarts."""
+    return (
+        hass.data.get("roborock_q10", {})
+        .get("map_ids", {})
+        .get(vacuum_entity_id)
+    )
+
+
+def remember_map_id(hass: Any, vacuum_entity_id: str, map_id: Any) -> None:
+    """Store the id of a received map so the legacy request works after a restart."""
+    if map_id is None:
+        return
+
+    data = hass.data.setdefault("roborock_q10", {})
+    map_ids = data.setdefault("map_ids", {})
+    map_id = str(map_id)
+
+    if map_ids.get(vacuum_entity_id) == map_id:
+        return
+
+    map_ids[vacuum_entity_id] = map_id
+    store = data.get("map_id_store")
+    if store is not None:
+        store.async_delay_save(lambda: dict(map_ids), 5)
+
+
+async def request_map_legacy(api: Any, fallback_map_id: str | None = None) -> bool:
     """EXPERIMENTAL: request the map like python-roborock < 7.4 did.
 
     Fetches the saved-map list if needed and then sends
@@ -74,6 +104,11 @@ async def request_map_legacy(api: Any) -> bool:
         packet_id = getattr(get_map_packet(api), "map_id", None)
         if packet_id is not None:
             map_id = str(packet_id)
+
+    if map_id is None:
+        # After a restart no map packet has arrived yet: use the id we
+        # remembered from the last one.
+        map_id = fallback_map_id
 
     if map_id is None:
         try:
@@ -105,7 +140,9 @@ async def request_map_legacy(api: Any) -> bool:
     return True
 
 
-async def request_map(api: Any, legacy: bool = False) -> None:
+async def request_map(
+    api: Any, legacy: bool = False, fallback_map_id: str | None = None
+) -> None:
     """Ask the robot to push its current map.
 
     1. ``api.map.refresh()`` - read-only current-map request of the library.
@@ -114,7 +151,7 @@ async def request_map(api: Any, legacy: bool = False) -> None:
        after this. Failures are logged and ignored.
     """
     if legacy:
-        await request_map_legacy(api)
+        await request_map_legacy(api, fallback_map_id)
 
     map_api = getattr(api, "map", None)
     refresh = getattr(map_api, "refresh", None)

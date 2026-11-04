@@ -9,7 +9,7 @@ from homeassistant.const import STATE_ON, EntityCategory
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.restore_state import RestoreEntity
 
-from .map_helpers import legacy_request_enabled, request_map
+from .map_helpers import known_map_id, legacy_request_enabled, request_map
 
 _LOGGER = logging.getLogger(__name__)
 _REFRESH_INTERVAL = timedelta(minutes=15)
@@ -127,6 +127,7 @@ class RoborockQ10PeriodicRefreshSwitch(RestoreEntity, SwitchEntity):
             await request_map(
                 entity.coordinator.api,
                 legacy=legacy_request_enabled(self.hass, self._vacuum_entity_id),
+                fallback_map_id=known_map_id(self.hass, self._vacuum_entity_id),
             )
         except Exception as err:
             _LOGGER.warning(
