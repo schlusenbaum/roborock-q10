@@ -3,6 +3,7 @@ from io import BytesIO
 
 from homeassistant.components.image import ImageEntity
 from homeassistant.core import callback
+from homeassistant.util import dt as dt_util
 from PIL import Image
 
 from . import DOMAIN, EVENT_MAP_UPDATED
@@ -139,9 +140,15 @@ class RoborockQ10MirroredMapImage(ImageEntity):
 
             output = BytesIO()
             image.save(output, format="PNG")
+            new_image = output.getvalue()
 
-            self._cached_image = output.getvalue()
+        if new_image == self._cached_image:
+            return
 
+        self._cached_image = new_image
+        # The state of an image entity is the time of its last update; it
+        # also lets the frontend show the picture and refresh its cache.
+        self._attr_image_last_updated = dt_util.utcnow()
         self.async_write_ha_state()
 
     def _live_image_content(self):
