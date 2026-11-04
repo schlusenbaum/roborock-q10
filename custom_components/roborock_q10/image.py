@@ -88,6 +88,9 @@ class RoborockQ10MirroredMapImage(ImageEntity):
         )
 
         if image_content is None:
+            image_content = self._live_image_content()
+
+        if image_content is None:
             return
         _LOGGER.debug(
             "Q10 MIRRORED MAP IMAGE FOUND: %s bytes",
@@ -141,6 +144,23 @@ class RoborockQ10MirroredMapImage(ImageEntity):
 
         self.async_write_ha_state()
 
+    def _live_image_content(self):
+        """Read the current map PNG straight from the Roborock API."""
+        from homeassistant.components.vacuum import DATA_COMPONENT
+
+        component = self.hass.data.get(DATA_COMPONENT)
+        vacuum = component.get_entity(self._vacuum_entity_id) if component else None
+
+        if vacuum is None:
+            return None
+
+        try:
+            return vacuum.coordinator.api.map.image_content
+        except AttributeError:
+            return None
+
     async def async_image(self):
         """Return the mirrored map image."""
+        if self._cached_image is None:
+            self._update_image()
         return self._cached_image

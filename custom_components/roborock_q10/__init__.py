@@ -19,6 +19,7 @@ WS_GET_ROOMS = "roborock_q10/get_rooms"
 EVENT_MAP_UPDATED = "roborock_q10_map_updated"
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+PLATFORMS = ["switch", "sensor", "select", "button", "image"]
 
 
 def _register_q10_packet_listener(hass, entity):
@@ -45,7 +46,7 @@ def _register_q10_packet_listener(hass, entity):
                 len(message.rooms),
             )
             maps = hass.data.setdefault(DOMAIN, {}).setdefault(
-                "maps", {}
+                "packets", {}
             ).setdefault(entity_id, {})
 
             maps[str(message.map_id)] = {
@@ -90,20 +91,30 @@ def _register_map_listener(hass, entity):
     listeners = hass.data.setdefault(DOMAIN, {}).setdefault("listeners", {})
 
     entity_id = entity.entity_id
+    api = entity.coordinator.api
 
-    if entity_id in listeners:
-        return
+    existing = listeners.get(entity_id)
+    if existing is not None:
+        old_api, old_unsub = existing
+        if old_api is api:
+            return
+        # The core Roborock integration was reloaded and created a new API
+        # object: drop the stale listener and subscribe to the new one.
+        try:
+            old_unsub()
+        except Exception:  # noqa: BLE001
+            pass
 
     last_fire = 0.0
 
-    def map_updated():
+    def map_updated(force=False):
         nonlocal last_fire
 
         _LOGGER.debug("Q10 MAP UPDATE CALLBACK ausgelöst")
 
         now = hass.loop.time()
 
-        if now - last_fire < 1.0:
+        if now - last_fire < 1.0 and not force:
             return
 
         last_fire = now
@@ -145,9 +156,10 @@ def _register_map_listener(hass, entity):
             for room in rooms
         ]
 
-    listeners[entity_id] = entity.coordinator.api.map.add_update_listener(
-        map_updated
-    )
+    listeners[entity_id] = (api, api.map.add_update_listener(map_updated))
+
+    # A map that arrived before we subscribed would otherwise never show up.
+    map_updated(force=True)
     _LOGGER.debug(
         "Q10 MAP LISTENER REGISTRIERT: %s",
         entity_id,
@@ -509,7 +521,7 @@ async def async_setup_entry(hass, entry):
 
     await hass.config_entries.async_forward_entry_setups(
         entry,
-        ["switch", "sensor", "select", "button", "image"],
+        PLATFORMS,
     )
 
     for _ in range(25):
@@ -529,5 +541,20 @@ async def async_setup_entry(hass, entry):
     return True
 
 
+
 async def async_unload_entry(hass, entry):
-    return True
+    entity_id = entry.data.get("entity_id")
+
+    if not entity_id:
+        return True
+
+    unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+    listener = hass.data.get(DOMAIN, {}).get("listeners", {}).pop(entity_id, None)
+    if listener is not None:
+        try:
+            listener[1]()
+        except Exception:  # noqa: BLE001
+            pass
+
+    return unloaded
