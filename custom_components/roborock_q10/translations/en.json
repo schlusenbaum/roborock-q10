@@ -74,6 +74,11 @@
       "clean_selected_rooms": {
         "name": "Clean Selected Rooms"
       }
+    },
+    "image": {
+      "mirrored_map": {
+        "name": "Map"
+      }
     }
   }
 }

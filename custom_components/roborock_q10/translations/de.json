@@ -74,6 +74,11 @@
       "clean_selected_rooms": {
         "name": "Ausgewählte Räume reinigen"
       }
+    },
+    "image": {
+      "mirrored_map": {
+        "name": "Karte"
+      }
     }
   }
 }
