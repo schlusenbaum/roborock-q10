@@ -69,6 +69,13 @@ async def request_map_legacy(api: Any) -> bool:
     map_id = getattr(maps, "current_map_id", None)
 
     if map_id is None:
+        # Many robots never answer the saved-map list request, but the id is
+        # also part of every map packet we already received.
+        packet_id = getattr(get_map_packet(api), "map_id", None)
+        if packet_id is not None:
+            map_id = str(packet_id)
+
+    if map_id is None:
         try:
             await maps.refresh()
         except Exception as err:  # noqa: BLE001
