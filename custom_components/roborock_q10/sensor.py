@@ -75,11 +75,27 @@ class RoborockQ10RoomsSensor(SensorEntity):
             self.async_write_ha_state()
 
     def _rooms(self):
-        return (
-            self.hass.data.get(DOMAIN, {})
-            .get("rooms", {})
-            .get(self._vacuum_entity_id, [])
-        )
+        """Rooms of the current map, read live from the Roborock API."""
+        component = self.hass.data.get(DATA_COMPONENT)
+        vacuum = component.get_entity(self._vacuum_entity_id) if component else None
+
+        if vacuum is not None:
+            try:
+                rooms = vacuum.coordinator.api.map.rooms or []
+            except AttributeError:
+                rooms = None
+
+            if rooms is not None:
+                return [{"id": room.id, "name": room.name} for room in rooms]
+
+        return [
+            {"id": room["id"], "name": room["name"]}
+            for room in (
+                self.hass.data.get(DOMAIN, {})
+                .get("rooms", {})
+                .get(self._vacuum_entity_id, [])
+            )
+        ]
 
 
 class RoborockQ10SelectedRoomsSensor(SensorEntity):

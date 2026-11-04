@@ -119,30 +119,22 @@ def _register_map_listener(hass, entity):
 
         last_fire = now
 
-        image_content = entity.coordinator.api.map.image_content
+        image_content = api.map.image_content
         _LOGGER.debug(
             "Q10 MAP IMAGE CONTENT: %s bytes",
             len(image_content) if image_content is not None else None,
         )
 
-        if image_content is not None:
-            hass.data.setdefault(DOMAIN, {}).setdefault("maps", {})[
-                entity_id
-            ] = image_content
-
-            hass.bus.async_fire(
-                EVENT_MAP_UPDATED,
-                {"entity_id": entity_id},
-            )
-
-        map_packet = getattr(entity.coordinator.api.map, "_map_packet", None)
+        map_packet = getattr(api.map, "_map_packet", None)
         map_id = getattr(map_packet, "map_id", None)
-        rooms = entity.coordinator.api.map.rooms or []
+        rooms = api.map.rooms or []
         _LOGGER.debug(
             "Q10 MAP UPDATE ROOMS: %s",
             [(room.id, room.name) for room in rooms],
         )
 
+        # Store everything first, then notify: the entities read this data
+        # when they handle the event.
         hass.data.setdefault(DOMAIN, {}).setdefault("rooms", {})[
             entity_id
         ] = [
@@ -155,6 +147,17 @@ def _register_map_listener(hass, entity):
             }
             for room in rooms
         ]
+
+        if image_content is not None:
+            hass.data.setdefault(DOMAIN, {}).setdefault("maps", {})[
+                entity_id
+            ] = image_content
+
+        if image_content is not None or rooms:
+            hass.bus.async_fire(
+                EVENT_MAP_UPDATED,
+                {"entity_id": entity_id},
+            )
 
     listeners[entity_id] = (api, api.map.add_update_listener(map_updated))
 
