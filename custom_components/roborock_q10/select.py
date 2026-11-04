@@ -91,6 +91,9 @@ async def async_setup_entry(hass, entry, async_add_entities):
     )
 
 
+# Option key for "all rooms"; translated via strings (state.all).
+ALL_ROOMS = "all"
+
 class RoborockQ10WaterLevelSelect(SelectEntity):
 
     _attr_entity_category = EntityCategory.CONFIG
@@ -221,18 +224,18 @@ class RoborockQ10RoomSelect(SelectEntity):
         vacuum = self._vacuum
 
         if vacuum is None:
-            return ["Alle"]
+            return [ALL_ROOMS]
 
         rooms = vacuum.coordinator.api.map.rooms or []
 
-        return ["Alle"] + [room.name for room in rooms]
+        return [ALL_ROOMS] + [room.name for room in rooms]
 
     @property
     def current_option(self):
         return self._attr_current_option
 
     async def async_select_option(self, option):
-        if option == "Alle":
+        if option in (ALL_ROOMS, "Alle"):
             self._attr_current_option = None
         else:
             self._attr_current_option = option

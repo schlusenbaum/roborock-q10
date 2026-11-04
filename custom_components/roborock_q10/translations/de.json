@@ -11,7 +11,10 @@
     },
     "select": {
       "clean_room": {
-        "name": "Reinigungsraum"
+        "name": "Reinigungsraum",
+        "state": {
+          "all": "Alle"
+        }
       },
       "water_level": {
         "name": "Wasserfluss",
@@ -57,6 +60,19 @@
           "mop": "Nur Wischen",
           "vacuum_then_mop": "Erst saugen, dann wischen"
         }
+      }
+    },
+    "switch": {
+      "periodic_map_refresh": {
+        "name": "Automatische Kartenaktualisierung"
+      }
+    },
+    "button": {
+      "refresh_map": {
+        "name": "Karte aktualisieren"
+      },
+      "clean_selected_rooms": {
+        "name": "Ausgewählte Räume reinigen"
       }
     }
   }

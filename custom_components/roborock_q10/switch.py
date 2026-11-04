@@ -9,6 +9,8 @@ from homeassistant.const import STATE_ON
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.restore_state import RestoreEntity
 
+from .map_helpers import request_map
+
 _LOGGER = logging.getLogger(__name__)
 _REFRESH_INTERVAL = timedelta(minutes=15)
 
@@ -35,7 +37,7 @@ class RoborockQ10PeriodicRefreshSwitch(RestoreEntity, SwitchEntity):
     """Enable periodic Q10 map refreshes."""
 
     _attr_has_entity_name = True
-    _attr_name = "Automatische Kartenaktualisierung"
+    _attr_translation_key = "periodic_map_refresh"
     _attr_icon = "mdi:refresh-auto"
 
     def __init__(self, hass, vacuum_entity_id, config_entry_id):
@@ -118,7 +120,7 @@ class RoborockQ10PeriodicRefreshSwitch(RestoreEntity, SwitchEntity):
             return
 
         try:
-            await entity.coordinator.api.refresh()
+            await request_map(entity.coordinator.api)
         except Exception as err:
             _LOGGER.warning(
                 "Q10 PERIODIC REFRESH FAILED: entity_id=%s error=%s",

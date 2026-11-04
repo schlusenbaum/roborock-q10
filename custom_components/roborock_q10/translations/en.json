@@ -11,7 +11,10 @@
     },
     "select": {
       "clean_room": {
-        "name": "Cleaning Room"
+        "name": "Cleaning Room",
+        "state": {
+          "all": "All"
+        }
       },
       "water_level": {
         "name": "Water Flow",
@@ -57,6 +60,19 @@
           "mop": "Mop Only",
           "vacuum_then_mop": "Vacuum, Then Mop"
         }
+      }
+    },
+    "switch": {
+      "periodic_map_refresh": {
+        "name": "Automatic Map Refresh"
+      }
+    },
+    "button": {
+      "refresh_map": {
+        "name": "Refresh Map"
+      },
+      "clean_selected_rooms": {
+        "name": "Clean Selected Rooms"
       }
     }
   }

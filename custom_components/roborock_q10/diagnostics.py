@@ -49,13 +49,24 @@ def diagnose_image(entity):
     }
 
 
+def _packet_info(packet):
+    if packet is None:
+        return None
+    return {
+        "type": type(packet).__name__,
+        "map_id": getattr(packet, "map_id", None),
+        "width": getattr(packet, "width", None),
+        "height": getattr(packet, "height", None),
+    }
+
+
 def diagnose_map(entity):
     api = entity.coordinator.api
     map_api = api.map
     data = map_api.as_dict()
 
     return {
-        "path": map_api.path,
+        "path": data.get("path", []) if isinstance(data, dict) else [],
         "rooms": [
             {
                 "id": room.id,
@@ -66,7 +77,8 @@ def diagnose_map(entity):
             }
             for room in (map_api.rooms or [])
         ],
-        "map_data_type": type(map_api.map_data).__name__,
+        "map_packet": _packet_info(getattr(map_api, "_map_packet", None)),
+        "image_content_size": len(map_api.image_content or b""),
         "as_dict_keys": list(data.keys()) if isinstance(data, dict) else None,
     }
 
@@ -207,7 +219,7 @@ def register_map_cache(entity, hass):
             original_handle_message(message)
 
             image_content = api.map.image_content
-            map_data = api.map.map_data
+            map_data = getattr(api.map, "_map_packet", None)
 
             maps[str(message.map_id)] = {
                 "map_id": message.map_id,
@@ -346,10 +358,10 @@ def diagnose_map_listener(entity, hass):
         }
 
     def map_updated():
-        map_data = map_api.map_data
+        map_data = getattr(map_api, "_map_packet", None)
 
         result = {
-            "path": map_api.path,
+            "path": len(map_api.path or []),
             "rooms": [
                 {
                     "id": room.id,
