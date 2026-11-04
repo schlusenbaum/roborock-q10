@@ -10,6 +10,7 @@ changes again.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -36,7 +37,68 @@ def get_rooms(api: Any) -> list[Any]:
     return list(getattr(map_api, "rooms", None) or [])
 
 
-async def request_map(api: Any) -> None:
+def legacy_request_enabled(hass: Any, vacuum_entity_id: str) -> bool:
+    """Whether the experimental legacy map request is switched on."""
+    return bool(
+        hass.data.get("roborock_q10", {})
+        .get("legacy_map_request", {})
+        .get(vacuum_entity_id, False)
+    )
+
+
+async def request_map_legacy(api: Any) -> bool:
+    """EXPERIMENTAL: request the map like python-roborock < 7.4 did.
+
+    Fetches the saved-map list if needed and then sends
+    ``dpMultiMap {"op": "get", "id": <map id>}``. This makes the robot push
+    its full map even when docked, but python-roborock dropped it because
+    some ss07 firmware treats it as a cleaning/relocation command, i.e. the
+    robot may start moving. Only used when the user switches it on.
+    """
+    try:
+        from roborock.data.b01_q10.b01_q10_code_mappings import B01_Q10_DP
+    except ImportError:
+        return False
+
+    maps = getattr(api, "maps", None)
+    command = getattr(api, "command", None)
+
+    if maps is None or command is None:
+        return False
+
+    map_id = getattr(maps, "current_map_id", None)
+
+    if map_id is None:
+        try:
+            await maps.refresh()
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.debug("Q10 legacy map request: map list failed: %s", err)
+            return False
+
+        for _ in range(20):
+            await asyncio.sleep(0.25)
+            map_id = getattr(maps, "current_map_id", None)
+            if map_id is not None:
+                break
+
+    if map_id is None:
+        _LOGGER.debug("Q10 legacy map request: no saved map id available")
+        return False
+
+    try:
+        await command.send(
+            B01_Q10_DP.COMMON,
+            {str(B01_Q10_DP.MULTI_MAP.code): {"op": "get", "id": map_id}},
+        )
+    except Exception as err:  # noqa: BLE001
+        _LOGGER.debug("Q10 legacy map request failed: %s", err)
+        return False
+
+    _LOGGER.debug("Q10 legacy map request sent for map %s", map_id)
+    return True
+
+
+async def request_map(api: Any, legacy: bool = False) -> None:
     """Ask the robot to push its current map.
 
     1. ``api.map.refresh()`` - read-only current-map request of the library.
@@ -44,6 +106,9 @@ async def request_map(api: Any) -> None:
        while its map screen is open. Some firmware only pushes the full map
        after this. Failures are logged and ignored.
     """
+    if legacy:
+        await request_map_legacy(api)
+
     map_api = getattr(api, "map", None)
     refresh = getattr(map_api, "refresh", None)
 

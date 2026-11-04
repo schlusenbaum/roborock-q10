@@ -4,7 +4,7 @@ from homeassistant.components.button import ButtonEntity
 from homeassistant.components.vacuum import DATA_COMPONENT
 from homeassistant.exceptions import HomeAssistantError
 
-from .map_helpers import request_map
+from .map_helpers import legacy_request_enabled, request_map
 
 
 
@@ -72,7 +72,10 @@ class RoborockQ10RefreshButton(ButtonEntity):
                 f"Vacuum entity not found: {self._vacuum_entity_id}"
             )
 
-        await request_map(entity.coordinator.api)
+        await request_map(
+            entity.coordinator.api,
+            legacy=legacy_request_enabled(self.hass, self._vacuum_entity_id),
+        )
 
 
 class RoborockQ10CleanSelectedRoomButton(ButtonEntity):
