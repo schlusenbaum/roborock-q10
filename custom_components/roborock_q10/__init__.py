@@ -9,13 +9,7 @@ from homeassistant.core import HomeAssistant, EVENT_STATE_CHANGED
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import discovery
 from .diagnostics import diagnose
-from .map_helpers import (
-    MAP_ID_STORE_KEY,
-    get_map_packet,
-    remember_map_id,
-    request_map,
-    room_centroids,
-)
+from .map_helpers import get_map_packet, request_map, room_centroids
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -133,7 +127,6 @@ def _register_map_listener(hass, entity):
 
         map_packet = getattr(api.map, "_map_packet", None)
         map_id = getattr(map_packet, "map_id", None)
-        remember_map_id(hass, entity_id, map_id)
         rooms = api.map.rooms or []
         _LOGGER.debug(
             "Q10 MAP UPDATE ROOMS: %s",
@@ -425,12 +418,6 @@ async def async_setup(hass: HomeAssistant, config) -> bool:
     component = hass.data.setdefault(DOMAIN, {})
 
     hass.data[DOMAIN]["listeners"] = {}
-
-    from homeassistant.helpers.storage import Store
-
-    map_id_store = Store(hass, 1, MAP_ID_STORE_KEY)
-    hass.data[DOMAIN]["map_id_store"] = map_id_store
-    hass.data[DOMAIN]["map_ids"] = await map_id_store.async_load() or {}
 
     async def handle_diagnose(call):
         entity_id = call.data["entity_id"]

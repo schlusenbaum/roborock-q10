@@ -10,7 +10,7 @@ Danach `roborock_q10.get_rooms` mit der richtigen `entity_id` ausführen. Wenn n
 
 Eine manuelle Kartenaktualisierung über **Karte aktualisieren** ausführen.
 
-Im Dock reagiert der Roboter darauf seit Home Assistant 2026.10 meist nicht. Dann einmal die Kartenansicht in der Roborock-App öffnen oder eine Reinigung starten. Alternativ den Schalter **Kartenabruf alte Methode (experimentell)** testen (Achtung: der Roboter kann dabei losfahren, siehe [Entities](entities.md)).
+Im Dock reagiert der Roboter darauf seit Home Assistant 2026.10 meist nicht. Dann einmal die Kartenansicht in der Roborock-App öffnen oder eine Reinigung starten.
 
 ## Q10-Integration findet die Vacuum-Entity nicht
 

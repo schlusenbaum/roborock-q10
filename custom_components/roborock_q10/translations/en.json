@@ -65,9 +65,6 @@
     "switch": {
       "periodic_map_refresh": {
         "name": "Automatic Map Refresh"
-      },
-      "legacy_map_request": {
-        "name": "Legacy map request (experimental)"
       }
     },
     "button": {

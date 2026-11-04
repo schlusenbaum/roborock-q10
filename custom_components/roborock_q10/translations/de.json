@@ -65,9 +65,6 @@
     "switch": {
       "periodic_map_refresh": {
         "name": "Automatische Kartenaktualisierung"
-      },
-      "legacy_map_request": {
-        "name": "Kartenabruf alte Methode (experimentell)"
       }
     },
     "button": {

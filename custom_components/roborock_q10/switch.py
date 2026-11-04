@@ -5,11 +5,11 @@ import logging
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.components.vacuum import DATA_COMPONENT
-from homeassistant.const import STATE_ON, EntityCategory
+from homeassistant.const import STATE_ON
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.restore_state import RestoreEntity
 
-from .map_helpers import known_map_id, legacy_request_enabled, request_map
+from .map_helpers import request_map
 
 _LOGGER = logging.getLogger(__name__)
 _REFRESH_INTERVAL = timedelta(minutes=15)
@@ -29,7 +29,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 entity_id,
                 entry.entry_id,
             ),
-            RoborockQ10LegacyMapRequestSwitch(hass, entity_id),
         ]
     )
 
@@ -39,8 +38,8 @@ class RoborockQ10PeriodicRefreshSwitch(RestoreEntity, SwitchEntity):
 
     _attr_has_entity_name = True
     _attr_translation_key = "periodic_map_refresh"
-    # Without the experimental legacy request the robot ignores map requests
-    # while docked, so this is off by default for new installations.
+    # A docked robot ignores map requests since python-roborock 7.12, so this
+    # is off by default for new installations.
     _attr_entity_registry_enabled_default = False
     _attr_icon = "mdi:refresh-auto"
 
@@ -124,11 +123,7 @@ class RoborockQ10PeriodicRefreshSwitch(RestoreEntity, SwitchEntity):
             return
 
         try:
-            await request_map(
-                entity.coordinator.api,
-                legacy=legacy_request_enabled(self.hass, self._vacuum_entity_id),
-                fallback_map_id=known_map_id(self.hass, self._vacuum_entity_id),
-            )
+            await request_map(entity.coordinator.api)
         except Exception as err:
             _LOGGER.warning(
                 "Q10 PERIODIC REFRESH FAILED: entity_id=%s error=%s",
@@ -141,60 +136,3 @@ class RoborockQ10PeriodicRefreshSwitch(RestoreEntity, SwitchEntity):
                 self._vacuum_entity_id,
             )
 
-
-class RoborockQ10LegacyMapRequestSwitch(RestoreEntity, SwitchEntity):
-    """EXPERIMENTAL: use the map request of python-roborock before 7.4.
-
-    When on, "Refresh map" and the periodic refresh also send
-    ``dpMultiMap op:get``. This brings the map even when the robot is
-    docked, but on some firmware the robot may start moving.
-    """
-
-    _attr_has_entity_name = True
-    _attr_translation_key = "legacy_map_request"
-    _attr_icon = "mdi:flask-outline"
-    _attr_entity_category = EntityCategory.CONFIG
-
-    def __init__(self, hass, vacuum_entity_id):
-        self.hass = hass
-        self._vacuum_entity_id = vacuum_entity_id
-        self._attr_unique_id = f"{vacuum_entity_id}_legacy_map_request"
-        self._attr_is_on = False
-
-    async def async_added_to_hass(self):
-        await super().async_added_to_hass()
-
-        from homeassistant.helpers import entity_registry as er
-
-        registry = er.async_get(self.hass)
-        vacuum_entry = registry.async_get(self._vacuum_entity_id)
-
-        if vacuum_entry and vacuum_entry.device_id:
-            registry.async_update_entity(
-                self.entity_id,
-                device_id=vacuum_entry.device_id,
-            )
-
-        last_state = await self.async_get_last_state()
-        self._set(last_state is not None and last_state.state == STATE_ON)
-
-    async def async_will_remove_from_hass(self):
-        self._store(False)
-        await super().async_will_remove_from_hass()
-
-    async def async_turn_on(self, **kwargs):
-        self._set(True)
-        self.async_write_ha_state()
-
-    async def async_turn_off(self, **kwargs):
-        self._set(False)
-        self.async_write_ha_state()
-
-    def _set(self, value):
-        self._attr_is_on = value
-        self._store(value)
-
-    def _store(self, value):
-        self.hass.data.setdefault("roborock_q10", {}).setdefault(
-            "legacy_map_request", {}
-        )[self._vacuum_entity_id] = value

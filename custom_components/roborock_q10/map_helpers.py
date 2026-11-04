@@ -10,7 +10,6 @@ changes again.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from typing import Any
 
@@ -37,112 +36,7 @@ def get_rooms(api: Any) -> list[Any]:
     return list(getattr(map_api, "rooms", None) or [])
 
 
-def legacy_request_enabled(hass: Any, vacuum_entity_id: str) -> bool:
-    """Whether the experimental legacy map request is switched on."""
-    return bool(
-        hass.data.get("roborock_q10", {})
-        .get("legacy_map_request", {})
-        .get(vacuum_entity_id, False)
-    )
-
-
-MAP_ID_STORE_KEY = "roborock_q10.map_ids"
-
-
-def known_map_id(hass: Any, vacuum_entity_id: str) -> str | None:
-    """Last map id seen for this robot, kept across restarts."""
-    return (
-        hass.data.get("roborock_q10", {})
-        .get("map_ids", {})
-        .get(vacuum_entity_id)
-    )
-
-
-def remember_map_id(hass: Any, vacuum_entity_id: str, map_id: Any) -> None:
-    """Store the id of a received map so the legacy request works after a restart."""
-    if map_id is None:
-        return
-
-    data = hass.data.setdefault("roborock_q10", {})
-    map_ids = data.setdefault("map_ids", {})
-    map_id = str(map_id)
-
-    if map_ids.get(vacuum_entity_id) == map_id:
-        return
-
-    map_ids[vacuum_entity_id] = map_id
-    store = data.get("map_id_store")
-    if store is not None:
-        store.async_delay_save(lambda: dict(map_ids), 5)
-
-
-async def request_map_legacy(api: Any, fallback_map_id: str | None = None) -> bool:
-    """EXPERIMENTAL: request the map like python-roborock < 7.4 did.
-
-    Fetches the saved-map list if needed and then sends
-    ``dpMultiMap {"op": "get", "id": <map id>}``. This makes the robot push
-    its full map even when docked, but python-roborock dropped it because
-    some ss07 firmware treats it as a cleaning/relocation command, i.e. the
-    robot may start moving. Only used when the user switches it on.
-    """
-    try:
-        from roborock.data.b01_q10.b01_q10_code_mappings import B01_Q10_DP
-    except ImportError:
-        return False
-
-    maps = getattr(api, "maps", None)
-    command = getattr(api, "command", None)
-
-    if maps is None or command is None:
-        return False
-
-    map_id = getattr(maps, "current_map_id", None)
-
-    if map_id is None:
-        # Many robots never answer the saved-map list request, but the id is
-        # also part of every map packet we already received.
-        packet_id = getattr(get_map_packet(api), "map_id", None)
-        if packet_id is not None:
-            map_id = str(packet_id)
-
-    if map_id is None:
-        # After a restart no map packet has arrived yet: use the id we
-        # remembered from the last one.
-        map_id = fallback_map_id
-
-    if map_id is None:
-        try:
-            await maps.refresh()
-        except Exception as err:  # noqa: BLE001
-            _LOGGER.debug("Q10 legacy map request: map list failed: %s", err)
-            return False
-
-        for _ in range(20):
-            await asyncio.sleep(0.25)
-            map_id = getattr(maps, "current_map_id", None)
-            if map_id is not None:
-                break
-
-    if map_id is None:
-        _LOGGER.debug("Q10 legacy map request: no saved map id available")
-        return False
-
-    try:
-        await command.send(
-            B01_Q10_DP.COMMON,
-            {str(B01_Q10_DP.MULTI_MAP.code): {"op": "get", "id": map_id}},
-        )
-    except Exception as err:  # noqa: BLE001
-        _LOGGER.debug("Q10 legacy map request failed: %s", err)
-        return False
-
-    _LOGGER.debug("Q10 legacy map request sent for map %s", map_id)
-    return True
-
-
-async def request_map(
-    api: Any, legacy: bool = False, fallback_map_id: str | None = None
-) -> None:
+async def request_map(api: Any) -> None:
     """Ask the robot to push its current map.
 
     1. ``api.map.refresh()`` - read-only current-map request of the library.
@@ -150,9 +44,6 @@ async def request_map(
        while its map screen is open. Some firmware only pushes the full map
        after this. Failures are logged and ignored.
     """
-    if legacy:
-        await request_map_legacy(api, fallback_map_id)
-
     map_api = getattr(api, "map", None)
     refresh = getattr(map_api, "refresh", None)
 
