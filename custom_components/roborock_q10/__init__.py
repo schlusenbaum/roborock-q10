@@ -5,11 +5,20 @@ import voluptuous as vol
 
 from homeassistant.components import websocket_api
 from homeassistant.components.vacuum import DATA_COMPONENT
+from homeassistant.util import dt as dt_util
 from homeassistant.core import HomeAssistant, EVENT_STATE_CHANGED
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import discovery
 from .diagnostics import diagnose
-from .map_helpers import get_map_packet, request_map, room_centroids
+from .map_helpers import (
+    async_load_map_cache,
+    get_map_packet,
+    has_cached_map,
+    request_map,
+    room_centroids,
+    room_list,
+    save_map_cache,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -134,26 +143,35 @@ def _register_map_listener(hass, entity):
         )
 
         # Store everything first, then notify: the entities read this data
-        # when they handle the event.
-        hass.data.setdefault(DOMAIN, {}).setdefault("rooms", {})[
-            entity_id
-        ] = [
-            {
-                "id": room.id,
-                "name": room.name,
-                "map_id": map_id,
-                "pixel_value": room.pixel_value,
-                "pixel_count": room.pixel_count,
-            }
-            for room in rooms
-        ]
+        # when they handle the event. Only a real map replaces the last
+        # known one (trace packets alone carry no rooms).
+        data = hass.data.setdefault(DOMAIN, {})
+        changed = False
+
+        if rooms:
+            data.setdefault("rooms", {})[entity_id] = [
+                {
+                    "id": room.id,
+                    "name": room.name,
+                    "map_id": map_id,
+                    "pixel_value": room.pixel_value,
+                    "pixel_count": room.pixel_count,
+                }
+                for room in rooms
+            ]
+            changed = True
 
         if image_content is not None:
-            hass.data.setdefault(DOMAIN, {}).setdefault("maps", {})[
-                entity_id
-            ] = image_content
+            if data.setdefault("maps", {}).get(entity_id) != image_content:
+                data["maps"][entity_id] = image_content
+                data.setdefault("map_updated_at", {})[entity_id] = (
+                    dt_util.utcnow().isoformat()
+                )
+            changed = True
 
-        if image_content is not None or rooms:
+        if changed:
+            data.get("map_cache_loaded", set()).discard(entity_id)
+            save_map_cache(hass)
             hass.bus.async_fire(
                 EVENT_MAP_UPDATED,
                 {"entity_id": entity_id},
@@ -197,15 +215,7 @@ async def handle_get_rooms(call):
                 break
             await asyncio.sleep(0.2)
 
-    rooms = [
-        {
-            "id": room.id,
-            "name": room.name,
-        }
-        for room in rooms
-    ]
-
-    call.hass.data.setdefault(DOMAIN, {}).setdefault("rooms", {})[entity_id] = rooms
+    rooms = room_list(call.hass, entity_id, entity.coordinator.api)
 
     _LOGGER.debug(
         "Q10 GET_ROOMS: liefert %s Räume: %s",
@@ -327,21 +337,20 @@ async def handle_clean_rooms(hass, call):
             else:
                 room_names = list(selected_rooms)
         else:
-            rooms = entity.coordinator.api.map.rooms or []
+            rooms = room_list(hass, entity_id, entity.coordinator.api)
 
             if not rooms:
                 raise ValueError(
-                    "Q10 rooms are not available yet. Please try again."
+                    "Q10 rooms are not available yet. Start a cleaning run or "
+                    "open the map in the Roborock app once."
                 )
 
-            room_ids = [room.id for room in rooms]
+            room_ids = [room["id"] for room in rooms]
 
     if room_names:
-        rooms = entity.coordinator.api.map.rooms or []
-
         name_to_id = {
-            room.name: room.id
-            for room in rooms
+            room["name"]: room["id"]
+            for room in room_list(hass, entity_id, entity.coordinator.api)
         }
 
         for name in room_names:
@@ -388,9 +397,10 @@ async def handle_select_rooms(hass, call):
     if entity is None:
         raise ValueError(f"Entity not found: {entity_id}")
 
-    rooms = entity.coordinator.api.map.rooms or []
-
-    available = {room.name for room in rooms}
+    available = {
+        room["name"]
+        for room in room_list(hass, entity_id, entity.coordinator.api)
+    }
 
     unknown = [
         name for name in room_names
@@ -418,6 +428,7 @@ async def async_setup(hass: HomeAssistant, config) -> bool:
     component = hass.data.setdefault(DOMAIN, {})
 
     hass.data[DOMAIN]["listeners"] = {}
+    await async_load_map_cache(hass)
 
     async def handle_diagnose(call):
         entity_id = call.data["entity_id"]
@@ -483,7 +494,7 @@ async def async_setup(hass: HomeAssistant, config) -> bool:
     return True
 
 
-async def _async_initial_map_request(entity, attempts=3, wait=10.0):
+async def _async_initial_map_request(entity, attempts=2, wait=10.0):
     """Request the map after startup until a map packet has arrived.
 
     After a Home Assistant restart the Q10 does not always push its full map
@@ -504,11 +515,18 @@ async def _async_initial_map_request(entity, attempts=3, wait=10.0):
                 return
             await asyncio.sleep(0.5)
 
-    _LOGGER.warning(
-        "Q10 map was not received after %s requests. Open the map once in "
-        "the Roborock app or press the map refresh button",
-        attempts,
-    )
+    if has_cached_map(entity.hass, entity.entity_id):
+        _LOGGER.info(
+            "Q10 has not sent its map yet, using the last known map and rooms. "
+            "A docked Q10 only sends its map during a cleaning run or when "
+            "the map is opened in the Roborock app"
+        )
+    else:
+        _LOGGER.warning(
+            "Q10 has not sent its map yet, so map and rooms are empty. A docked "
+            "Q10 only sends its map during a cleaning run or when the map is "
+            "opened in the Roborock app; it will show up automatically then"
+        )
 
 
 async def async_setup_entry(hass, entry):

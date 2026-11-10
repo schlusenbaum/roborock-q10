@@ -10,6 +10,7 @@ changes again.
 
 from __future__ import annotations
 
+import base64
 import logging
 from typing import Any
 
@@ -114,3 +115,95 @@ def room_centroids(api: Any) -> list[dict[str, Any]]:
         )
 
     return result
+
+
+# ---------------------------------------------------------------------------
+# Last known map, kept across restarts
+#
+# After a restart a docked Q10 only sends its map during a cleaning run or
+# when the Roborock app shows it. Until then the last received map and rooms
+# are restored from storage, so rooms can be selected and cleaned right away.
+# ---------------------------------------------------------------------------
+
+_DOMAIN = "roborock_q10"
+_CACHE_STORE_KEY = "roborock_q10.last_map"
+_CACHE_STORE_VERSION = 1
+
+
+async def async_load_map_cache(hass: Any) -> None:
+    """Load the last known maps/rooms into hass.data."""
+    from homeassistant.helpers.storage import Store
+
+    store = Store(hass, _CACHE_STORE_VERSION, _CACHE_STORE_KEY)
+    data = hass.data.setdefault(_DOMAIN, {})
+    data["map_cache_store"] = store
+
+    try:
+        stored = await store.async_load() or {}
+    except Exception as err:  # noqa: BLE001 - a broken cache must not block setup
+        _LOGGER.warning("Q10 map cache could not be loaded: %s", err)
+        stored = {}
+
+    rooms = data.setdefault("rooms", {})
+    maps = data.setdefault("maps", {})
+    updated = data.setdefault("map_updated_at", {})
+
+    for entity_id, item in stored.items():
+        if item.get("rooms"):
+            rooms.setdefault(entity_id, item["rooms"])
+        if item.get("image"):
+            try:
+                maps.setdefault(entity_id, base64.b64decode(item["image"]))
+            except ValueError:
+                pass
+        if item.get("updated_at"):
+            updated.setdefault(entity_id, item["updated_at"])
+
+    data["map_cache_loaded"] = set(stored)
+
+
+def save_map_cache(hass: Any) -> None:
+    """Schedule writing the current maps/rooms to storage."""
+    data = hass.data.get(_DOMAIN, {})
+    store = data.get("map_cache_store")
+
+    if store is None:
+        return
+
+    def _data() -> dict[str, Any]:
+        rooms = data.get("rooms", {})
+        maps = data.get("maps", {})
+        updated = data.get("map_updated_at", {})
+        result = {}
+        for entity_id in set(rooms) | set(maps):
+            image = maps.get(entity_id)
+            result[entity_id] = {
+                "rooms": rooms.get(entity_id, []),
+                "image": base64.b64encode(image).decode() if image else None,
+                "updated_at": updated.get(entity_id),
+            }
+        return result
+
+    store.async_delay_save(_data, 10)
+
+
+def has_cached_map(hass: Any, vacuum_entity_id: str) -> bool:
+    """Whether a map from a previous run is available."""
+    return vacuum_entity_id in hass.data.get(_DOMAIN, {}).get(
+        "map_cache_loaded", set()
+    )
+
+
+def room_list(hass: Any, vacuum_entity_id: str, api: Any = None) -> list[dict[str, Any]]:
+    """Rooms as ``[{"id", "name"}]``: live from the robot, else last known."""
+    live = get_rooms(api) if api is not None else []
+
+    if live:
+        return [{"id": int(room.id), "name": room.name} for room in live]
+
+    return [
+        {"id": int(room["id"]), "name": room["name"]}
+        for room in hass.data.get(_DOMAIN, {})
+        .get("rooms", {})
+        .get(vacuum_entity_id, [])
+    ]

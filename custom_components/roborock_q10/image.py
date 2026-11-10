@@ -148,7 +148,16 @@ class RoborockQ10MirroredMapImage(ImageEntity):
         self._cached_image = new_image
         # The state of an image entity is the time of its last update; it
         # also lets the frontend show the picture and refresh its cache.
-        self._attr_image_last_updated = dt_util.utcnow()
+        # Use the time the robot sent this map (also for a map restored after
+        # a restart), so the shown age is honest.
+        stored = (
+            self.hass.data.get(DOMAIN, {})
+            .get("map_updated_at", {})
+            .get(self._vacuum_entity_id)
+        )
+        self._attr_image_last_updated = (
+            dt_util.parse_datetime(stored) if stored else None
+        ) or dt_util.utcnow()
         self.async_write_ha_state()
 
     def _live_image_content(self):

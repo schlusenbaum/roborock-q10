@@ -22,7 +22,7 @@ Check the available room names and make sure the spelling matches exactly.
 
 The vacuum may not have received map data yet.
 
-Refreshing the Roborock API or triggering a map update can make the room information available. Since Home Assistant 2026.10 a docked robot usually ignores map requests: open the map screen in the Roborock app once or start a cleaning run.
+Refreshing the Roborock API or triggering a map update can make the room information available. Since Home Assistant 2026.10 a docked robot usually ignores map requests: open the map screen in the Roborock app once or start a cleaning run. From version 1.0.13 the last received map and rooms are restored after a restart, so this only matters for the very first map.
 
 ## Check Diagnostics
 

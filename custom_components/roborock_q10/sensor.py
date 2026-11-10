@@ -9,6 +9,7 @@ from homeassistant.components.vacuum import DATA_COMPONENT
 from homeassistant.core import callback
 
 from . import DOMAIN, EVENT_MAP_UPDATED
+from .map_helpers import room_list
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up the Q10 map catalog sensor."""
@@ -75,27 +76,11 @@ class RoborockQ10RoomsSensor(SensorEntity):
             self.async_write_ha_state()
 
     def _rooms(self):
-        """Rooms of the current map, read live from the Roborock API."""
+        """Rooms of the current map: live from the robot, else last known."""
         component = self.hass.data.get(DATA_COMPONENT)
         vacuum = component.get_entity(self._vacuum_entity_id) if component else None
-
-        if vacuum is not None:
-            try:
-                rooms = vacuum.coordinator.api.map.rooms or []
-            except AttributeError:
-                rooms = None
-
-            if rooms is not None:
-                return [{"id": room.id, "name": room.name} for room in rooms]
-
-        return [
-            {"id": room["id"], "name": room["name"]}
-            for room in (
-                self.hass.data.get(DOMAIN, {})
-                .get("rooms", {})
-                .get(self._vacuum_entity_id, [])
-            )
-        ]
+        api = getattr(getattr(vacuum, "coordinator", None), "api", None)
+        return room_list(self.hass, self._vacuum_entity_id, api)
 
 
 class RoborockQ10SelectedRoomsSensor(SensorEntity):

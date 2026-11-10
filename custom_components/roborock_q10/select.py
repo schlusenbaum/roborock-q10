@@ -6,6 +6,7 @@ from homeassistant.const import EntityCategory
 from homeassistant.core import callback
 
 from . import DOMAIN, EVENT_MAP_UPDATED
+from .map_helpers import room_list
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -226,9 +227,11 @@ class RoborockQ10RoomSelect(SelectEntity):
         if vacuum is None:
             return [ALL_ROOMS]
 
-        rooms = vacuum.coordinator.api.map.rooms or []
+        rooms = room_list(
+            self.hass, self._vacuum_entity_id, vacuum.coordinator.api
+        )
 
-        return [ALL_ROOMS] + [room.name for room in rooms]
+        return [ALL_ROOMS] + [room["name"] for room in rooms]
 
     @property
     def current_option(self):
