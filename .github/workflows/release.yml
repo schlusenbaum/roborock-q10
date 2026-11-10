@@ -1,0 +1,35 @@
+name: Release
+
+# Packs the integration into roborock_q10.zip and attaches it to every
+# published release. HACS installs from this ZIP (see hacs.json) and shows
+# its download count in the store.
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  zip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set manifest version from the release tag
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          jq --arg v "$version" '.version = $v' \
+            custom_components/roborock_q10/manifest.json > manifest.tmp
+          mv manifest.tmp custom_components/roborock_q10/manifest.json
+
+      - name: Build ZIP
+        run: |
+          cd custom_components/roborock_q10
+          zip -r "$GITHUB_WORKSPACE/roborock_q10.zip" . -x '__pycache__/*' '*.pyc'
+
+      - name: Attach ZIP to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$GITHUB_REF_NAME" roborock_q10.zip --clobber

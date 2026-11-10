@@ -1,5 +1,7 @@
 {
   "name": "Roborock Q10",
   "content_in_root": false,
-  "render_readme": true
+  "render_readme": true,
+  "zip_release": true,
+  "filename": "roborock_q10.zip"
 }
