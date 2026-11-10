@@ -64,3 +64,9 @@ It adds Q10-specific functionality without replacing or duplicating the existing
 Map orientation is configurable per installation because the correct orientation may differ between Q10 variants or individual installations.
 
 The integration currently provides independent controls for rotation, horizontal mirroring, and vertical mirroring. These settings are applied directly to the generated map image.
+
+## Support
+
+If you like this integration, I'd be happy about a coffee:
+
+[![Buy me a coffee](https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=&slug=schlusenbaum&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff)](https://www.buymeacoffee.com/schlusenbaum)
