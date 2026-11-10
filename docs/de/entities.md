@@ -36,11 +36,13 @@ Die verfügbaren Optionen werden aus den aktuell bekannten Räumen der Q10-Karte
 
 ### Saugleistung
 
-- Leise
-- Normal
-- Turbo
-- Max
-- Max+
+- Leise (`quiet`)
+- Normal (`balanced`)
+- Turbo (`turbo`)
+- Max (`max`)
+- Max+ (`max_plus`)
+
+In Klammern steht der Optionswert, z. B. für `select.select_option` in Automationen. Die alten Werte `Leise`, `Normal`, `Turbo`, `Max` und `Max+` werden weiterhin akzeptiert.
 
 ### Wasserfluss
 

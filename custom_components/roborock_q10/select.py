@@ -26,12 +26,22 @@ WATER_LEVELS = {
 }
 
 
+# Option keys are translated via strings (state.<key>).
 FAN_LEVELS = {
-    "Leise": YXFanLevel.QUIET,
-    "Normal": YXFanLevel.BALANCED,
-    "Turbo": YXFanLevel.TURBO,
-    "Max": YXFanLevel.MAX,
-    "Max+": YXFanLevel.MAX_PLUS,
+    "quiet": YXFanLevel.QUIET,
+    "balanced": YXFanLevel.BALANCED,
+    "turbo": YXFanLevel.TURBO,
+    "max": YXFanLevel.MAX,
+    "max_plus": YXFanLevel.MAX_PLUS,
+}
+
+# Option values up to 1.0.13, still accepted so existing automations work.
+LEGACY_FAN_LEVELS = {
+    "Leise": "quiet",
+    "Normal": "balanced",
+    "Turbo": "turbo",
+    "Max": "max",
+    "Max+": "max_plus",
 }
 
 CLEAN_LINES = {
@@ -412,6 +422,7 @@ class RoborockQ10FanLevelSelect(SelectEntity):
         return None
 
     async def async_select_option(self, option):
+        option = LEGACY_FAN_LEVELS.get(option, option)
         await self._vacuum.coordinator.api.vacuum.set_fan_level(
             FAN_LEVELS[option]
         )
@@ -447,6 +458,16 @@ class RoborockQ10CleanLineSelect(SelectEntity):
             registry.async_update_entity(
                 self.entity_id,
                 device_id=vacuum_entry.device_id,
+            )
+
+        # Refresh whenever the robot reports its status, so the shown route
+        # follows changes from Home Assistant and from the Roborock app (#7).
+        vacuum = self._vacuum
+        if vacuum is not None:
+            self.async_on_remove(
+                vacuum.coordinator.api.status.add_update_listener(
+                    self.async_write_ha_state
+                )
             )
 
     @property

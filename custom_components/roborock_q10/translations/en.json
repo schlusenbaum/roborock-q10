@@ -38,9 +38,9 @@
       "clean_line": {
         "name": "Cleaning Route",
         "state": {
-          "daily": "Daily",
-          "fast": "Medium",
-          "fine": "Intensive"
+          "daily": "Light",
+          "fast": "Balanced",
+          "fine": "Deep"
         }
       },
       "map_rotation": {

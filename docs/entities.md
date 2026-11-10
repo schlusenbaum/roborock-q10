@@ -8,7 +8,7 @@ Depending on the supported features of the vacuum, these can include the followi
 
 A select entity for choosing the vacuum's suction power.
 
-The available options are based on the Q10 fan levels supported by the underlying Roborock API.
+Options (option value in brackets, e.g. for `select.select_option` in automations): Quiet (`quiet`), Balanced (`balanced`), Turbo (`turbo`), Max (`max`), Max+ (`max_plus`). The old values `Leise`, `Normal`, `Turbo`, `Max` and `Max+` are still accepted.
 
 ## Water Flow
 
@@ -18,7 +18,7 @@ A select entity for choosing the water flow used during mopping.
 
 A select entity named **Cleaning Route**.
 
-It controls the Q10-specific cleaning route through the corresponding Roborock command.
+It controls the Q10-specific cleaning route through the corresponding Roborock command. Options, named as in the Roborock app: Light (`daily`), Balanced (`fast`), Deep (`fine`).
 
 ## Room Selection
 
