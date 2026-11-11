@@ -1,5 +1,11 @@
 # Roborock Q10
 
+[![Release](https://img.shields.io/github/v/release/schlusenbaum/roborock-q10?sort=semver)](https://github.com/schlusenbaum/roborock-q10/releases)
+[![Downloads](https://img.shields.io/github/downloads/schlusenbaum/roborock-q10/total?label=Downloads)](https://github.com/schlusenbaum/roborock-q10/releases)
+[![HACS](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/docs/faq/custom_repositories/)
+[![HACS validation](https://github.com/schlusenbaum/roborock-q10/actions/workflows/hacs.yml/badge.svg)](https://github.com/schlusenbaum/roborock-q10/actions/workflows/hacs.yml)
+[![Hassfest](https://github.com/schlusenbaum/roborock-q10/actions/workflows/hassfest.yml/badge.svg)](https://github.com/schlusenbaum/roborock-q10/actions/workflows/hassfest.yml)
+
 Home Assistant custom integration for Roborock Q10 devices.
 
 This integration extends Home Assistant's official Roborock integration with Q10-specific functionality for maps, rooms, cleaning controls, and map orientation.
